@@ -1,6 +1,6 @@
 ---
 name: implement-custom-events
-description: End-to-end workflow for implementing custom Snowplow event tracking — discover what to track, design schemas and event specs, create them in Snowplow Console, instrument the code, and validate in Micro. Use when a customer wants to add custom event tracking to an application.
+description: "End-to-end workflow for custom Snowplow event tracking — discover what to track, draft a tracking spec, design schemas and event specs via design-tracking-plan, create them in Console, instrument the code, and validate in Micro. Use when a customer wants custom event tracking added to an application from start to finish. Triggers: add custom events, implement tracking end to end, track new feature, instrument and validate events."
 ---
 
 # Implement Custom Events
@@ -18,13 +18,13 @@ Use this skill when:
 Don't use this skill when:
 
 - The tracker isn't installed at all and the user only wants to set up the base SDK (use `install-snowplow-tracking` directly).
-- The user only wants to design schemas without touching code (use `tracking-design` directly).
+- The user only wants to design schemas without touching code (use `design-tracking-plan` directly).
 - The user only wants to troubleshoot existing tracking (use the validate/debug skills directly).
 
 ## Prerequisites
 
 - Application codebase is accessible for scanning and modification.
-- The Snowplow MCP is available — the design and Console-write steps depend on it.
+- Console access for the design and Console-write steps: either the Snowplow MCP (from the official `snowplow` plugin) or `snowplow-cli` with the git-backed workflow. If neither is available, stop after the spec-drafting step and tell the user what to install.
 - User has authority to create schemas and event specs in the target organization.
 
 ## Instructions
@@ -37,6 +37,8 @@ Branch on what the user has provided:
 - **Specific feature provided**: Scope discovery to that feature only — read the relevant files, identify the user actions and outcomes in that flow, and list the entities involved.
 - **PRD / written spec provided**: Extract events, entities, and KPIs from the document. Note any open questions to ask the user before designing.
 
+If `.snowplow/agent-context.md` exists (created by `setup-snowplow-context`), read it first for vendor, platforms, and collaboration mode.
+
 ### 2. Draft a human-readable tracking spec
 
 Produce a short Markdown spec for the user to review before any design work:
@@ -48,15 +50,15 @@ Produce a short Markdown spec for the user to review before any design work:
 
 Keep this conversational — it's a shared artifact, not a schema yet. Ask the user to confirm or amend before moving on.
 
-### 3. Hand the spec to `tracking-design`
+### 3. Hand the spec to `design-tracking-plan`
 
 > Invokes another skill.
 
-Pass the approved spec to the `tracking-design` skill. That skill owns the schema and event-specification design (entity-first modelling, naming conventions, property instructions, Iglu reuse) and runs its own user-confirmation step before creating anything in Console.
+Pass the approved spec to the `design-tracking-plan` skill. That skill owns the schema and event-specification design (entity-first modelling, naming conventions, property instructions, Iglu reuse) and runs its own user-confirmation step before creating anything in Console.
 
 ### 4. Verify the proposed design
 
-When `tracking-design` returns its proposal (its Phase 4), review it against the spec from step 2:
+When `design-tracking-plan` returns its proposal (its Phase 5), review it against the spec from step 2:
 
 - Every event in the spec is represented.
 - Entities match the spec; nothing extraneous added.
@@ -67,13 +69,13 @@ Flag any gaps to the user before approving the design.
 
 ### 5. Create schemas in dev via the Snowplow MCP
 
-> Executed inside `tracking-design` Phase 6.
+> Executed inside `design-tracking-plan` Phase 7.
 
-Confirm the design and let `tracking-design` run. New schema versions for both event and entity schemas are created in the dev environment via the Snowplow MCP. Capture the resulting Iglu URIs for use during instrumentation.
+Confirm the design and let `design-tracking-plan` run. New schema versions for both event and entity schemas are created in the dev environment via the Snowplow MCP. Capture the resulting Iglu URIs for use during instrumentation.
 
 ### 6. Create tracking plans / event specs in Console
 
-> Executed inside `tracking-design` Phase 6.
+> Executed inside `design-tracking-plan` Phase 7.
 
 Event specifications are created with the event schema and all entities in a single MCP call, attached to the target tracking plan.
 
@@ -150,7 +152,7 @@ Report results back to the user with the events confirmed and any follow-ups.
 
 ## Skills Composed by This Workflow
 
-- `tracking-design` — steps 3–6 (design + Console creation via the Snowplow MCP).
+- `design-tracking-plan` — steps 3–6 (design + Console creation via the Snowplow MCP).
 - `install-snowplow-tracking` — step 7, only if the tracker isn't installed.
 - `fetch-snowplow-docs` — step 8, to confirm Snowtype support and fetch current SDK APIs.
 - `setup-micro` — step 11, if Micro isn't running.
@@ -167,7 +169,7 @@ Report results back to the user with the events confirmed and any follow-ups.
 
 Targets the typical custom-event-implementation path. Does not cover:
 
-- Server-side tracking on platforms outside web/iOS/Android (use `tracking-design` plus the relevant SDK directly).
+- Server-side tracking on platforms outside web/iOS/Android (use `design-tracking-plan` plus the relevant SDK directly).
 - Streaming/enrichment configuration.
 - dbt modelling — use the unified-setup skill once events are flowing.
 - Promoting schemas from dev to prod environments.
