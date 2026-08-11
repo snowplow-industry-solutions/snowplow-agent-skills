@@ -1,6 +1,6 @@
 ---
 name: setup-micro
-description: Sets up Snowplow Micro for local testing of tracking implementations, with support for mounting custom schemas and configuring enrichments.
+description: "Set up Snowplow Micro locally for testing tracking implementations — Docker configuration, mounting custom schemas, connecting Iglu registries, and enabling enrichments. Use before validating any new or changed tracking. Triggers: Snowplow Micro, set up Micro, local pipeline, mount schemas, test tracking locally."
 ---
 
 # Setup Micro

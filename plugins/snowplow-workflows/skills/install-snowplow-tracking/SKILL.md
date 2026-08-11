@@ -1,6 +1,6 @@
 ---
 name: install-snowplow-tracking
-description: Install and configure Snowplow tracking in web, iOS, or Android applications with out-of-the-box event tracking and user identification. Use when a developer needs to instrument Snowplow tracking from scratch in their application.
+description: "Install and configure Snowplow tracking from scratch in web, iOS, or Android applications — tracker initialisation, out-of-the-box event tracking, and user identification. Use when an application has no Snowplow tracker yet. For guidance on individual tracking calls in an already-instrumented app, the official snowplow plugin's implementation-guidance skill also applies. Triggers: install Snowplow, add tracker, tracker setup, initialise tracker, out-of-the-box events."
 ---
 
 # Install Snowplow Tracking

@@ -1,6 +1,6 @@
 ---
 name: validate-snowplow-implementation
-description: Test and validate Snowplow tracking implementations against Micro, checking for good/bad events, validation errors, and common implementation issues. Use when a developer has implemented tracking and needs to verify it works correctly before deploying to production.
+description: "Test and validate a Snowplow tracking implementation against Micro — check good/bad event counts, inspect attached entities, and surface validation errors and common implementation issues before deploying to production. Use after instrumenting or changing tracking code. Triggers: validate tracking, verify implementation, check events in Micro, good bad events, test tracking."
 ---
 
 # Validate Snowplow Implementation

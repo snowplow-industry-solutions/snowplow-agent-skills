@@ -1,6 +1,6 @@
 ---
 name: fetch-snowplow-docs
-description: Fetches current Snowplow tracker documentation via the docs sitemap. Use whenever you need accurate, up-to-date tracker API examples — initialisation, tracking calls, plugins — for any platform (web, iOS, Android, server-side). Do not rely on built-in knowledge; tracker APIs change with each release.
+description: "Fetch current Snowplow tracker documentation via the docs sitemap — initialisation, tracking calls, plugins — for any platform (web, iOS, Android, server-side). Use before writing any tracker code; never rely on built-in knowledge, tracker APIs change with each release. Triggers: Snowplow docs, tracker API reference, latest tracker docs, look up Snowplow documentation."
 ---
 
 # Fetch Snowplow Documentation
