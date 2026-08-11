@@ -1,0 +1,8 @@
+.DS_Store
+# Local agent-harness install artifacts (created by `npx skills add` runs)
+.agents/
+.augment/
+.crush/
+.kiro/
+.qwen/
+skills-lock.json
