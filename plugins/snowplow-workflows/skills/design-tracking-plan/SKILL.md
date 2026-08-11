@@ -8,6 +8,15 @@ tools:
   - create_schema_version
   - list_event_specifications
   - get_event_specification
+  - search_iglu_central
+  - list_tracking_plans
+  - get_tracking_plan
+  - create_tracking_plan
+  - edit_tracking_plan
+  - create_event_specification
+  - update_event_specification
+  - list_source_apps
+  - get_source_app
 ---
 
 # Design Tracking Plan
