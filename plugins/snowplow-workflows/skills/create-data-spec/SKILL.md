@@ -39,7 +39,7 @@ Read `reference/spec_translation_guide.md` before extracting any event under eit
 
 ### Entry A — from a product spec, PRD, or goals
 
-1. **Load project context.** Read `.snowplow/agent-context.md` if the project has one (written by `setup-snowplow-context`) and take `tracked-platforms`, `collaboration-mode`, and `schema-vendor` from it instead of asking again. Under `collaboration-mode: review-only`, draft the whole spec and present it for review rather than asking question by question; under `co-design`, work through the steps with the user. If the file is missing, offer once to run `setup-snowplow-context` before continuing — it removes these questions for every later skill.
+1. **Load project context.** Read `.snowplow/agent-context.md` if the project has one (written by `setup-snowplow-context`) and take `tracked-platforms`, `collaboration-mode`, and `schema-vendor` from it instead of asking again. Under `collaboration-mode: review-only`, draft the whole spec and present it for review rather than asking question by question; under `co-design`, work through the steps with the user. If the file is missing, offer once to run `setup-snowplow-context` before continuing — it removes these questions for this and every later skill.
 
 2. **Extract goals and KPIs.** Read the source document and write down the business questions it wants answered and the metrics it names. A goal the document never attaches a metric to stays a goal: record it as an Open Question rather than inventing a number for it.
 
