@@ -82,16 +82,20 @@ Default: if the organisation already keeps data structures in a git repository, 
 
 ### Phase 2: Intent Gathering
 
-Ask clarifying questions to understand what the customer wants to track:
+Under `collaboration-mode: review-only`, do not ask these interactively — derive answers from the spec and context, record each as a stated assumption in the proposal. The Phase 6 confirmation gate always remains.
+
+If a data spec exists (produced by `create-data-spec`, or supplied by the user), take the intent from it: goals and KPIs from its tables, events and entities from its Events/Entities sections, and Snowplow candidates from its "Snowplow semantics" section. Ask only about gaps — anything the spec would have carried as an Open Question. Only when no spec exists, gather intent by asking:
 
 - What user action or system event triggers this?
 - What business question does this data answer?
 - What entities (objects) are involved? (e.g. user, product, page, transaction)
 - Are there existing schemas we should reuse?
 
-Ask one question at a time and explain trade-offs when presenting options.
+In interactive mode, ask one question at a time and explain trade-offs when presenting options.
 
 ### Phase 3: Schema Source Decision
+
+Under `collaboration-mode: review-only`, do not ask these interactively — derive answers from the spec and context, record each as a stated assumption in the proposal. The Phase 6 confirmation gate always remains.
 
 Before designing anything new, decide together with the user whether an out-of-the-box Snowplow schema fits the use case or whether a custom schema is needed.
 
