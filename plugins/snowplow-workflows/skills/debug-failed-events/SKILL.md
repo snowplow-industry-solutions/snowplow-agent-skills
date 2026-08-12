@@ -1,6 +1,8 @@
 ---
 name: debug-failed-events
 description: "Debug Snowplow events failing validation during local development — bad-row error messages, Snowplow Micro's /bad endpoint, schema resolution, schema validation, enrichment, and malformed-event errors — with categorized root causes and actionable fixes. For production pipeline-wide diagnosis (missing events, enrichment latency, loader health) use the official snowplow plugin's troubleshooting skill. Triggers: failed events, bad rows, validation error, Micro bad endpoint, schema resolution error, event failing validation."
+tools:
+  - get_failed_events_metrics
 ---
 
 # Debug Failed Events
@@ -323,7 +325,7 @@ This skill focuses on debugging validation failures. It does not cover:
 
 - **Pipeline infrastructure issues** - Use pipeline troubleshooting skill for collector/enrichment infrastructure problems
 - **Performance issues** - Events arriving but slowly; use performance monitoring
-- **Schema design** - Use tracking-design skill for creating/modifying schemas
+- **Schema design** - Use design-tracking-plan skill for creating/modifying schemas
 - **Initial implementation** - Use install-snowplow-tracking skill for setting up tracking from scratch
 
 For production pipeline failures, this skill provides debugging methodology but may require additional pipeline-specific tools and access.

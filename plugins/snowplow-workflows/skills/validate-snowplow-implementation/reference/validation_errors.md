@@ -17,7 +17,7 @@ The schema referenced by the event does not exist in any Iglu registry that Micr
 
 **Fix:**
 1. **Verify schema exists**: Check if schema is deployed to DEV environment in Snowplow Console
-2. **Deploy schema to DEV**: If schema exists but not in DEV, deploy it using Console or tracking-design skill
+2. **Deploy schema to DEV**: If schema exists but not in DEV, deploy it using Console or design-tracking-plan skill
 3. **Check Iglu registry configuration**: Ensure Micro is configured to use the correct Iglu registry (see setup-micro skill)
 4. **Verify schema URI**: Ensure the Iglu URI in tracking code exactly matches the deployed schema (vendor, name, version)
 

@@ -21,7 +21,7 @@ Don't use this skill when:
 
 - Micro is not running (run setup-micro skill first)
 - Testing against DEV/PROD pipeline (use pipeline troubleshooting instead)
-- Designing schemas (use tracking-design skill)
+- Designing schemas (use design-tracking-plan skill)
 - Need to add new events to existing tracker (use implementation-guidance skill)
 
 ## Prerequisites
@@ -201,7 +201,7 @@ Run any script with `--help` for full usage details.
 
 This skill validates implementations against a local Micro instance. It does not:
 
-- **Deploy schemas**: Use tracking-design skill or Console to deploy schemas to DEV/PROD
+- **Deploy schemas**: Use design-tracking-plan skill or Console to deploy schemas to DEV/PROD
 - **Test in live pipelines**: After Micro validation succeeds, test in DEV pipeline using pipeline-infrastructure skill
 - **Debug complex enrichment issues**: Micro has limited enrichment support. For enrichment issues, test in DEV pipeline.
 - **Performance testing**: Micro is for functional testing only, not load testing
