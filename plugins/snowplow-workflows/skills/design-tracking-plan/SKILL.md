@@ -91,13 +91,13 @@ If a data spec exists (produced by `create-data-spec`, or supplied by the user),
 - What entities (objects) are involved? (e.g. user, product, page, transaction)
 - Are there existing schemas we should reuse?
 
-In interactive mode, ask one question at a time and explain trade-offs when presenting options.
+Under `collaboration-mode: co-design`, ask one question at a time and explain trade-offs when presenting options.
 
 ### Phase 3: Schema Source Decision
 
 Under `collaboration-mode: review-only`, do not ask these interactively — derive answers from the spec and context, record each as a stated assumption in the proposal. The Phase 6 confirmation gate always remains.
 
-Before designing anything new, decide together with the user whether an out-of-the-box Snowplow schema fits the use case or whether a custom schema is needed.
+Before designing anything new, decide whether an out-of-the-box Snowplow schema fits the use case or whether a custom schema is needed. Under `collaboration-mode: co-design`, decide this together with the user; under `review-only`, decide it yourself from the spec and context, and record it as a stated assumption in the proposal.
 
 1. Based on the intent gathered in Phase 2, search Iglu Central for relevant out-of-the-box event and entity schemas (ecommerce, media, web, mobile, form). Also list relevant existing organization schemas the user has already created.
 2. For each candidate, fetch the schema and review its properties against the user's intent. Note specifically which business requirements are covered and which are not.
@@ -105,10 +105,10 @@ Before designing anything new, decide together with the user whether an out-of-t
    - **Full match** — an Iglu Central schema covers the use case as-is. Recommend using it directly and design only the entities and event spec.
    - **Partial match** — an Iglu Central schema covers most of the use case but is missing fields. Recommend using the OOTB schema and adding the missing data via a companion custom entity rather than forking the public schema.
    - **No match** — no OOTB schema covers the business requirement. Recommend designing a custom schema in Phase 4.
-4. Ask explicitly: "Does one of these out-of-the-box schemas work, or do we need to design a custom schema for your requirements?" Wait for the decision.
+4. Under `collaboration-mode: co-design`, ask explicitly: "Does one of these out-of-the-box schemas work, or do we need to design a custom schema for your requirements?" Wait for the decision. Under `review-only`, choose the best-supported option yourself and record it as a stated assumption in the proposal.
 5. If the user chooses custom, gather the remaining requirements (fields, types, constraints, examples) before entering design reasoning.
 
-Default preference: **always prefer an OOTB schema when it covers the business requirement**. Design a custom schema only once the user confirms the OOTB options do not meet their needs.
+Default preference: **always prefer an OOTB schema when it covers the business requirement**. Design a custom schema only once the OOTB options are confirmed insufficient — by the user under `co-design`, or by the agent's own assessment under `review-only`.
 
 ### Phase 4: Design Reasoning
 
