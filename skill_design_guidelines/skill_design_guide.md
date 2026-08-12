@@ -167,6 +167,15 @@ The SKILL.md should:
 
 A SKILL.md that's longer than 200-400 lines is almost certainly trying to do too much. If it's that long, content has probably escaped from one of the other forms into the index.
 
+## Setup-Skill Pointers: Hard vs. Soft Dependency
+
+Some skills read per-project config seeded by a setup skill (e.g. `setup-snowplow-context`'s `.snowplow/agent-context.md`). Classify the dependency before deciding whether the SKILL.md points to the setup skill:
+
+- **Hard dependency** — without the config, the skill's output is *wrong*, not just fuzzy. Example: `design-tracking-plan` — a wrong `schema-vendor` produces wrong Iglu URIs, a wrong `schema-workflow` mutates the wrong source of truth.
+- **Soft dependency** — the config only sharpens output; the skill degrades gracefully without it. Example: `implement-custom-events`, which delegates its design work to `design-tracking-plan` and relies on that skill's own hard-dependency check rather than repeating it.
+
+Pointer rule: hard-dependency skills carry one explicit pointer line in their context-loading step, offering once to run the setup skill before continuing. Soft-dependency skills carry none — don't cargo-cult the pointer into places where it isn't load-bearing.
+
 ## Choosing the Right Form: A Decision Procedure
 
 When you have a chunk of knowledge to encode, ask in order:
