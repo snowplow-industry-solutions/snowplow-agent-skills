@@ -1,6 +1,6 @@
 ---
 name: implement-custom-events
-description: "End-to-end workflow for custom Snowplow event tracking — discover what to track, draft a tracking spec, design schemas and event specs via design-tracking-plan, create them in Console, instrument the code, and validate in Micro. Use when a customer wants custom event tracking added to an application from start to finish. Triggers: add custom events, implement tracking end to end, track new feature, instrument and validate events."
+description: "End-to-end workflow for custom Snowplow event tracking — discover what to track, draft a tracking spec, design schemas and event specs via design-tracking-plan, create them in Console, instrument the code, and validate in Micro. Use when a customer wants custom event tracking added to an application from start to finish. Triggers: add custom events, implement tracking end to end, instrument a feature end to end, instrument and validate events."
 ---
 
 # Implement Custom Events

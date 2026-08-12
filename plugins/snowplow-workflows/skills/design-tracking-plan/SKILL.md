@@ -1,6 +1,6 @@
 ---
 name: design-tracking-plan
-description: "Design Snowplow tracking plans, schemas, entities, and event specifications — entity-first modelling, naming conventions, schema reuse, versioning, and property instructions — with a choice of git-backed (snowplow-cli) or Console-managed (MCP) workflows. Use when designing or evolving tracking from a data spec or feature requirements. For quick Console-side schema design without a local workflow, the official snowplow plugin's tracking-design skill also applies. Triggers: tracking plan, schema design, event spec, event specification, entities, Iglu, data structures, git-backed schemas."
+description: "Design Snowplow tracking plans, schemas, entities, and event specifications — entity-first modelling, naming conventions, schema reuse, versioning, and property instructions — with a choice of git-backed (snowplow-cli) or Console-managed (MCP) workflows. Use when the events and entities to track are already agreed — a data spec or settled feature requirements — and need schemas and event specs designed. For quick Console-side schema design without a local workflow, the official snowplow plugin's tracking-design skill also applies. Triggers: tracking plan, schema design, event spec, event specification, entities, Iglu, data structures, git-backed schemas."
 tools:
   - list_schemas
   - get_schema_properties
