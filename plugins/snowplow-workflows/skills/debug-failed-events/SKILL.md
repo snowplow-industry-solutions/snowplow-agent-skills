@@ -1,6 +1,6 @@
 ---
 name: debug-failed-events
-description: "Debug Snowplow events failing validation during local development — bad-row error messages, Snowplow Micro's /bad endpoint, schema resolution, schema validation, enrichment, and malformed-event errors — with categorized root causes and actionable fixes. For production pipeline-wide diagnosis (missing events, enrichment latency, loader health) use the official snowplow plugin's troubleshooting skill. Triggers: failed events, bad rows, validation error, Micro bad endpoint, schema resolution error, event failing validation."
+description: "Diagnose individual Snowplow events failing validation — a pasted bad-row error, Micro's /bad endpoint during local testing, or bad rows surfaced from a real pipeline via Console, MCP, or a warehouse bad-rows table — categorizing schema resolution, schema validation, enrichment, and malformed-event errors with actionable fixes. For pipeline-wide health (events missing entirely, enrichment latency, loader failures) use the official snowplow plugin's troubleshooting skill. Triggers: failed events, bad rows, validation error, Micro bad endpoint, schema resolution error, event failing validation, prod bad rows."
 tools:
   - get_failed_events_metrics
 ---
