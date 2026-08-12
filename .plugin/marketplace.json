@@ -1,0 +1,15 @@
+{
+  "name": "snowplow-workflows",
+  "owner": {
+    "name": "Snowplow",
+    "url": "https://snowplow.io"
+  },
+  "description": "Snowplow-blessed field workflow skills for AI coding agents",
+  "plugins": [
+    {
+      "name": "snowplow-workflows",
+      "source": "./plugins/snowplow-workflows",
+      "description": "Deep multi-step Snowplow workflows — tracking design, data specs, local testing with Micro, and end-to-end event implementation. Complements the official snowplow plugin (MCP + Console skills)."
+    }
+  ]
+}

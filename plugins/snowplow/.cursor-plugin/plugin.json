@@ -1,9 +1,0 @@
-{
-    "name": "snowplow",
-    "description": "Turn your AI into a Snowplow expert — validate schemas, instrument tracking, debug data quality issues and build data models directly from your editor",
-    "author": {
-      "name": "Snowplow",
-      "email": "support@snowplow.io",
-      "url": "https://snowplow.io"
-    }
-  }
