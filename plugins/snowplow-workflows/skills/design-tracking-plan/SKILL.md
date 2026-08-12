@@ -39,7 +39,7 @@ Use this skill when:
 
 - A customer wants to track something new and needs the schemas, entities, and event specs designed.
 - An existing tracking plan is evolving — new events, new entities, or a new version of a published schema.
-- A data spec, PRD, or set of feature requirements needs turning into a concrete tracking design.
+- A data spec or settled feature requirements needs turning into a concrete tracking design.
 - Schemas live in a git repository and the team wants changes reviewed and shipped through CI.
 
 Don't use this skill when:
