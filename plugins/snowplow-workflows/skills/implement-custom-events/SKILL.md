@@ -37,7 +37,7 @@ Branch on what the user has provided:
 - **Specific feature provided**: Scope discovery to that feature only — read the relevant files, identify the user actions and outcomes in that flow, and list the entities involved.
 - **PRD / written spec provided**: Extract events, entities, and KPIs from the document. Note any open questions to ask the user before designing.
 
-If `.snowplow/agent-context.md` exists (created by `setup-snowplow-context`), read it first for vendor, platforms, and collaboration mode.
+If `.snowplow/agent-context.md` exists (created by `setup-snowplow-context`), read it first for vendor, platforms, and collaboration mode. If the file is missing, offer once to run `setup-snowplow-context` before continuing — it removes these questions for every later skill.
 
 ### 2. Draft a human-readable tracking spec
 
