@@ -39,8 +39,8 @@ Common mistakes:
 
 **To verify:**
 ```bash
-curl -H "apikey: YOUR_API_KEY" \
-  "https://your-org.iglu.snplow.net/api/schemas/iglu:com.example/event_name/jsonschema/1-0-0"
+curl -fsS -H "apikey: YOUR_API_KEY" \
+  "https://your-org.iglu.snplow.net/api/schemas/com.example/event_name/jsonschema/1-0-0"
 ```
 
 ### 3. Verify Registry Configuration
@@ -64,7 +64,7 @@ Check pipeline's Iglu resolver configuration. This varies by deployment.
 
 ```bash
 # Test if registry is accessible
-curl -H "apikey: YOUR_API_KEY" https://your-org.iglu.snplow.net/api/schemas/iglu:com.example/event_name/jsonschema/1-0-0
+curl -fsS -H "apikey: YOUR_API_KEY" "https://your-org.iglu.snplow.net/api/schemas/com.example/event_name/jsonschema/1-0-0"
 ```
 
 Should return the schema JSON if it exists and is accessible.
@@ -199,8 +199,8 @@ To avoid schema resolution errors:
 3. **Test schema accessibility**
    ```bash
    # After deployment, verify schema is accessible
-   curl -H "apikey: YOUR_API_KEY" \
-     "https://your-org.iglu.snplow.net/api/schemas/iglu:com.example/event/jsonschema/1-0-0"
+   curl -fsS -H "apikey: YOUR_API_KEY" \
+     "https://your-org.iglu.snplow.net/api/schemas/com.example/event/jsonschema/1-0-0"
    ```
 
 4. **Document schema versions**

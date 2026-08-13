@@ -135,9 +135,11 @@ Follow the category-specific diagnostic workflow:
 
 **Fix Pattern:**
 ```bash
-# Check schema deployment — returns the schema JSON if deployed
-curl -H "apikey: YOUR_API_KEY" \
-  "https://your-org.iglu.snplow.net/api/schemas/iglu:com.example/event/jsonschema/1-0-0"
+# Check schema deployment — returns the schema JSON if deployed.
+# -f makes a missing schema fail loudly (curl: (22) ... 404) instead of
+# printing an error body that looks like a result.
+curl -fsS -H "apikey: YOUR_API_KEY" \
+  "https://your-org.iglu.snplow.net/api/schemas/com.example/event/jsonschema/1-0-0"
 
 # If not deployed, deploy to appropriate environment
 # Then retry event
