@@ -9,13 +9,17 @@ Checks per skill:
   - SKILL.md exists
   - frontmatter parses and contains single-line `name:` and `description:`
   - name is kebab-case and matches the directory name
-  - description ends with a `Triggers: ...` list
+  - name does not collide with a skill in the official `snowplow` plugin
+  - description ends with a `Triggers: ...` list (list is the final content)
   - SKILL.md is <= 500 lines
   - no forbidden files (README.md, CHANGELOG.md, .env) inside the skill dir
+  - intra-skill paths referenced in .md files (scripts/, reference/, ...) exist
 Repo-level:
   - root marketplace.json files parse, agree with each other, and every
     plugin `source` dir exists and contains .claude-plugin/plugin.json
     whose `name` matches the marketplace entry
+  - each plugin's .claude-plugin/plugin.json and .plugin/plugin.json are
+    both present, parse, and are identical
 """
 import json
 import re
@@ -27,6 +31,27 @@ SKILLS_DIR = ROOT / "plugins" / "snowplow-workflows" / "skills"
 MAX_LINES = 500
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 FORBIDDEN = {"README.md", "CHANGELOG.md", ".env"}
+
+# Skill names in the official `snowplow` product plugin. A skill here with
+# the same name collides when both plugins are installed (the tracking-design
+# -> design-tracking-plan rename happened for exactly this reason).
+RESERVED_SKILL_NAMES = {
+    "console-operations",
+    "implementation-guidance",
+    "pipeline-infrastructure",
+    "signals",
+    "tracking-design",
+    "troubleshooting",
+}
+
+# Path-like references to a skill's own asset directories, e.g.
+# `scripts/analyze.py` or `examples/foo/`. The lookbehind keeps this from
+# matching inside URLs or longer paths.
+SKILL_ASSET_DIRS = ("scripts", "reference", "references", "examples",
+                    "assets", "templates", "troubleshooting")
+INTRA_PATH_RE = re.compile(
+    r"(?<![\w/.-])(?:" + "|".join(SKILL_ASSET_DIRS) + r")/[A-Za-z0-9_./-]+"
+)
 
 
 def parse_frontmatter(text: str):
@@ -81,13 +106,69 @@ def check_skill(skill_dir: Path):
             errors.append(f"{label}: name {name!r} is not kebab-case")
         if name != skill_dir.name:
             errors.append(f"{label}: name {name!r} != directory name {skill_dir.name!r}")
+        if name in RESERVED_SKILL_NAMES:
+            errors.append(
+                f"{label}: name {name!r} collides with an official snowplow plugin skill"
+            )
     if not isinstance(desc, str) or not desc:
         errors.append(f"{label}: frontmatter missing `description`")
-    elif "Triggers:" not in desc:
-        errors.append(f"{label}: description lacks a 'Triggers:' list")
+    else:
+        idx = desc.rfind("Triggers:")
+        tail = desc[idx + len("Triggers:"):].strip().rstrip(".") if idx != -1 else ""
+        if not tail or ". " in tail:
+            errors.append(f"{label}: description must end with a 'Triggers:' list")
     for f in skill_dir.iterdir():
         if f.name in FORBIDDEN:
             errors.append(f"{label}: forbidden file {f.name}")
+    errors += check_intra_skill_paths(skill_dir)
+    return errors
+
+
+def check_intra_skill_paths(skill_dir: Path):
+    """Flag references in the skill's .md files to asset paths that don't exist.
+
+    Only concrete references are checked — a final path segment with an
+    extension, or a trailing '/' for directories. Bare prose like
+    "troubleshooting/debugging tips" is ignored.
+    """
+    errors = []
+    seen = set()
+    for md in sorted(skill_dir.rglob("*.md")):
+        rel_md = md.relative_to(skill_dir)
+        for m in INTRA_PATH_RE.finditer(md.read_text(encoding="utf-8")):
+            ref = m.group(0).rstrip(".")
+            last_segment = ref.rstrip("/").rsplit("/", 1)[-1]
+            if not ref.endswith("/") and "." not in last_segment:
+                continue
+            if (rel_md, ref) in seen:
+                continue
+            seen.add((rel_md, ref))
+            if not (skill_dir / ref).exists():
+                errors.append(
+                    f"{skill_dir.name}: {rel_md} references missing path {ref!r}"
+                )
+    return errors
+
+
+def check_plugin_manifest_pair(plugin_dir: Path):
+    """The plugin manifest is duplicated for two loaders; both copies must
+    exist, parse, and be identical."""
+    errors = []
+    manifests = {}
+    for sub in (".claude-plugin", ".plugin"):
+        p = plugin_dir / sub / "plugin.json"
+        rel = f"{sub}/plugin.json"
+        if not p.is_file():
+            errors.append(f"{plugin_dir.name}: missing {rel}")
+            continue
+        try:
+            manifests[rel] = json.loads(p.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            errors.append(f"{plugin_dir.name}: {rel} invalid JSON ({e})")
+    if len(manifests) == 2 and manifests[".claude-plugin/plugin.json"] != manifests[".plugin/plugin.json"]:
+        errors.append(
+            f"{plugin_dir.name}: .claude-plugin/plugin.json and .plugin/plugin.json differ — keep in sync"
+        )
     return errors
 
 
@@ -107,16 +188,22 @@ def check_marketplaces():
         vals = list(catalogs.values())
         if vals[0] != vals[1]:
             errors.append(".claude-plugin/ and .plugin/ marketplace.json differ — keep in sync")
+    seen_sources = set()
     for rel, cat in catalogs.items():
         for entry in cat.get("plugins", []):
             src = ROOT / entry.get("source", "")
             manifest = src / ".claude-plugin" / "plugin.json"
             if not src.is_dir():
                 errors.append(f"{rel}: plugin source {entry.get('source')} does not exist")
-            elif not manifest.is_file():
-                errors.append(f"{rel}: {entry.get('source')} lacks .claude-plugin/plugin.json")
-            else:
-                declared = json.loads(manifest.read_text(encoding="utf-8")).get("name")
+                continue
+            if src not in seen_sources:
+                seen_sources.add(src)
+                errors += check_plugin_manifest_pair(src)
+            if manifest.is_file():
+                try:
+                    declared = json.loads(manifest.read_text(encoding="utf-8")).get("name")
+                except json.JSONDecodeError:
+                    continue  # already reported by check_plugin_manifest_pair
                 if declared != entry.get("name"):
                     errors.append(
                         f"{rel}: entry name {entry.get('name')!r} != plugin.json name {declared!r}"
