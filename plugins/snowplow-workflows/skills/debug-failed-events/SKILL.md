@@ -207,9 +207,13 @@ See `reference/schema_validation_errors.md` for detailed fixes for:
 
 #### For Malformed Events:
 
-1. **Validate JSON structure**
+1. **Validate JSON structure of the raw payload**
    ```bash
-   python3 -m json.tool failed_event.json
+   # A bad-row record is itself valid JSON wrapping the broken payload —
+   # extract the original tracker payload (the collector payload body /
+   # parameters inside the bad row) into payload.json first, or this
+   # check always passes.
+   python3 -m json.tool payload.json
    ```
 
 2. **Check required Snowplow fields**
