@@ -176,6 +176,13 @@ class TestDanglingPaths(TempDirTest):
             body="See https://docs.snowplow.io/docs/reference/foo.html for docs.")
         self.assertEqual(validate.check_skill(skill), [])
 
+    def test_url_query_value_not_flagged(self):
+        # '=' before the ref marks a URL query value, not an intra-skill path.
+        skill = make_skill(
+            self.root, "my-skill",
+            body="See https://x.io/d?f=reference/a.md for the doc.")
+        self.assertEqual(validate.check_skill(skill), [])
+
     def test_prose_slash_without_extension_not_flagged(self):
         skill = make_skill(self.root, "my-skill",
                            body="General troubleshooting/debugging tips follow.")

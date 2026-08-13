@@ -61,12 +61,12 @@ _REL = r"(?:\.\./|\./)*"
 # guard stops prose like 'scripts/foo.py-based' matching as a path; the
 # lookbehind keeps this from firing inside URLs or longer paths.
 FILE_REF_RE = re.compile(
-    r"(?<![\w/.-])(" + _REL + _DIRS + r"/[A-Za-z0-9_*./-]*\.[A-Za-z0-9]+)(?![\w-])"
+    r"(?<![\w/.=-])(" + _REL + _DIRS + r"/[A-Za-z0-9_*./-]*\.[A-Za-z0-9]+)(?![\w-])"
 )
 # (b) Directory refs: trailing '/' with at least one named segment after
 # the asset dir — 'scripts/' alone is prose, not a reference.
 DIR_REF_RE = re.compile(
-    r"(?<![\w/.-])(" + _REL + _DIRS + r"/[A-Za-z0-9_*-][A-Za-z0-9_*/-]*/)(?![\w.-])"
+    r"(?<![\w/.=-])(" + _REL + _DIRS + r"/[A-Za-z0-9_*-][A-Za-z0-9_*/-]*/)(?![\w.-])"
 )
 # (c) Backtick-wrapped refs where the whole span is the path: explicit
 # references, checked even without an extension or trailing slash.
