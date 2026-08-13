@@ -39,7 +39,8 @@ Common mistakes:
 
 **To verify:**
 ```bash
-python scripts/check_schema_deployment.py --schema "iglu:com.example/event_name/jsonschema/1-0-0" --environment DEV
+curl -H "apikey: YOUR_API_KEY" \
+  "https://your-org.iglu.snplow.net/api/schemas/iglu:com.example/event_name/jsonschema/1-0-0"
 ```
 
 ### 3. Verify Registry Configuration
@@ -198,7 +199,8 @@ To avoid schema resolution errors:
 3. **Test schema accessibility**
    ```bash
    # After deployment, verify schema is accessible
-   python scripts/check_schema_deployment.py --schema "iglu:com.example/event/jsonschema/1-0-0"
+   curl -H "apikey: YOUR_API_KEY" \
+     "https://your-org.iglu.snplow.net/api/schemas/iglu:com.example/event/jsonschema/1-0-0"
    ```
 
 4. **Document schema versions**

@@ -135,8 +135,9 @@ Follow the category-specific diagnostic workflow:
 
 **Fix Pattern:**
 ```bash
-# Check schema deployment
-python scripts/check_schema_deployment.py --schema "iglu:com.example/event/jsonschema/1-0-0"
+# Check schema deployment — returns the schema JSON if deployed
+curl -H "apikey: YOUR_API_KEY" \
+  "https://your-org.iglu.snplow.net/api/schemas/iglu:com.example/event/jsonschema/1-0-0"
 
 # If not deployed, deploy to appropriate environment
 # Then retry event
@@ -146,7 +147,11 @@ python scripts/check_schema_deployment.py --schema "iglu:com.example/event/jsons
 
 1. **Compare event data with schema**
    ```bash
-   python scripts/compare_event_schema.py --event-file failed_event.json --schema "iglu:com.example/event/jsonschema/1-0-0"
+   # Fetch the schema, then compare field-by-field against the failing event
+   curl -H "apikey: YOUR_API_KEY" \
+     "https://your-org.iglu.snplow.net/api/schemas/iglu:com.example/event/jsonschema/1-0-0" > schema.json
+   jq '{required, properties: (.properties | map_values(.type))}' schema.json
+   jq 'keys' failed_event.json
    ```
 
 2. **Identify specific violation**
@@ -182,9 +187,8 @@ See `reference/schema_validation_errors.md` for detailed fixes for:
    - Custom enrichments: Check enrichment code/configuration
 
 3. **Test enrichment in isolation**
-   ```bash
-   python scripts/test_enrichment.py --enrichment-name <name> --event-file failed_event.json
-   ```
+   - API enrichments: call the external API directly (`curl -v` with the same payload the enrichment sends)
+   - Other enrichments: run the event through Micro with only that enrichment enabled (see the setup-micro skill)
 
 **Fix Pattern:**
 - Update enrichment configuration
@@ -195,7 +199,7 @@ See `reference/schema_validation_errors.md` for detailed fixes for:
 
 1. **Validate JSON structure**
    ```bash
-   python scripts/validate_event_json.py --event-file failed_event.json
+   python3 -m json.tool failed_event.json
    ```
 
 2. **Check required Snowplow fields**
@@ -260,12 +264,6 @@ The script's `file` mode expects a JSON array of failed-event objects. Each obje
 - `reference/enrichment_errors.md` - Enrichment failure patterns and debugging steps
 - `reference/malformed_events.md` - Handling corrupt or incomplete event payloads
 
-## Examples
-
-- `examples/missing_required_field/` - Complete debugging workflow for missing required property error
-- `examples/schema_not_found/` - Step-by-step resolution of schema resolution failure
-- `examples/type_mismatch/` - Diagnosing and fixing type mismatch errors
-
 ## Common Patterns
 
 **Pattern 1: Schema Not Found in DEV**
@@ -306,10 +304,10 @@ Error: Additional property "debug_flag" not allowed
 
 When standard diagnostic workflow doesn't resolve the issue:
 
-- **Intermittent failures**: See `troubleshooting/intermittent_failures.md`
-- **Multiple error types**: See `troubleshooting/cascading_errors.md`
-- **Schema appears correct but validation fails**: See `troubleshooting/cache_issues.md`
-- **Events work in Micro but fail in pipeline**: See `troubleshooting/environment_differences.md`
+- **Intermittent failures**: usually registry timeouts or rate limits — check registry health and connectivity, not the schema itself
+- **Multiple error types**: fix in pipeline order — schema resolution first, then schema validation, then enrichment
+- **Schema appears correct but validation fails**: suspect caching — restart Micro (`docker compose restart micro`) or wait 1–2 minutes after a schema deployment
+- **Events work in Micro but fail in pipeline**: compare environments — schema deployed to DEV but not PROD, or enrichments enabled in one but not the other
 
 ## Best Practices
 

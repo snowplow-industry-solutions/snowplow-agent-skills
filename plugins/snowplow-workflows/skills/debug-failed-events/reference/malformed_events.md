@@ -58,7 +58,7 @@ Parse error: Invalid JSON at line 12, column 5
 
 **Diagnosis:**
 ```bash
-python scripts/validate_event_json.py --event-file event.json
+python3 -m json.tool event.json
 ```
 
 **Fixes:**
@@ -81,9 +81,9 @@ Error: Missing required platform field 'e' (event type)
 - `dtm` or `ttm`: Timestamp
 
 **Diagnosis:**
-Check event payload for these fields:
+Check event payload for these fields (`null` in the output = missing):
 ```bash
-python scripts/validate_event_json.py --event-file event.json --check-snowplow-fields
+jq '{e, tv, p, aid, dtm, ttm}' event.json
 ```
 
 **Fixes:**
@@ -335,13 +335,13 @@ function checkEventSize(data) {
 
 ```bash
 # Validate JSON structure
-python scripts/validate_event_json.py --event-file event.json
+python3 -m json.tool event.json
 
-# Check event size
-python scripts/validate_event_json.py --event-file event.json --check-size
+# Check event size in bytes
+wc -c < event.json
 
-# Validate Snowplow required fields
-python scripts/validate_event_json.py --event-file event.json --check-snowplow-fields
+# Check required Snowplow fields (null in the output = missing)
+jq '{e, tv, p, aid, dtm, ttm}' event.json
 ```
 
 ## Quick Reference

@@ -136,7 +136,7 @@ For enrichments with external dependencies:
 
 Check if event has required fields for enrichment:
 ```bash
-python scripts/validate_event_json.py --event-file failed_event.json
+jq . failed_event.json
 ```
 
 ## Platform-Specific Enrichments
@@ -179,12 +179,10 @@ python scripts/validate_event_json.py --event-file failed_event.json
 
 ### 1. Test Enrichments Before Deployment
 
-Test enrichments with sample events:
-```bash
-python scripts/test_enrichment.py \
-  --enrichment-config enrichment.json \
-  --event-file sample_event.json
-```
+Test enrichments with sample events: run them in Snowplow Micro with the
+enrichment configuration mounted (see the setup-micro skill), send a sample
+event, and confirm it lands in `/micro/good` with the expected derived
+context attached.
 
 ### 2. Monitor External Dependencies
 
@@ -226,12 +224,12 @@ curl -v https://api.example.com/endpoint
 # Check database connectivity
 psql -h hostname -U username -d database
 
-# Validate enrichment configuration
-python scripts/validate_enrichment_config.py --config enrichment.json
-
-# Test enrichment with sample event
-python scripts/test_enrichment.py --enrichment api_enrichment --event-file event.json
+# Validate enrichment configuration JSON syntax
+python3 -m json.tool enrichment.json
 ```
+
+To test an enrichment end to end, run it in Micro with the configuration
+mounted (see the setup-micro skill) and send a sample event through.
 
 ## Further Reading
 

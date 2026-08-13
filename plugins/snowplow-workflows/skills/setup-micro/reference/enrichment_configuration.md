@@ -203,7 +203,7 @@ If enrichments aren't applying, check:
 3. Schema versions match what Micro expects
 4. External dependencies (databases, APIs) are accessible
 
-See `troubleshooting/enrichment_failures.md` for detailed diagnostics.
+For deeper enrichment debugging, use the debug-failed-events skill.
 
 ## Enrichments in Micro vs Production
 

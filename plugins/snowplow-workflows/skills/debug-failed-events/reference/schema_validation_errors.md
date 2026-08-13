@@ -396,20 +396,24 @@ if (items.length > 0) {
 const uniqueItems = [...new Set(items)];
 ```
 
-## Diagnostic Tool
+## Diagnostic Approach
 
-Use the comparison script to identify all validation errors:
+Fetch the schema and compare the failing event field-by-field:
 
 ```bash
-python scripts/compare_event_schema.py \
-  --event-file failed_event.json \
-  --schema "iglu:com.example/event/jsonschema/1-0-0"
+# Fetch the schema from your registry
+curl -H "apikey: YOUR_API_KEY" \
+  "https://your-org.iglu.snplow.net/api/schemas/iglu:com.example/event/jsonschema/1-0-0" > schema.json
+
+# List the schema's required fields and property types
+jq '{required, properties: (.properties | map_values(.type))}' schema.json
+
+# List the failing event's fields
+jq 'keys' failed_event.json
 ```
 
-This outputs:
-- All validation errors
-- Field-by-field comparison
-- Suggested fixes
+Missing required fields, extra fields not in `properties`, and type
+mismatches account for nearly all validation errors.
 
 ## Quick Reference
 
