@@ -401,19 +401,24 @@ const uniqueItems = [...new Set(items)];
 Fetch the schema and compare the failing event field-by-field:
 
 ```bash
-# Fetch the schema from your registry
-curl -H "apikey: YOUR_API_KEY" \
-  "https://your-org.iglu.snplow.net/api/schemas/iglu:com.example/event/jsonschema/1-0-0" > schema.json
+# Fetch the schema from your registry (-f fails loudly if the schema is missing)
+curl -fsS -H "apikey: YOUR_API_KEY" \
+  "https://your-org.iglu.snplow.net/api/schemas/com.example/event/jsonschema/1-0-0" > schema.json
 
-# List the schema's required fields and property types
-jq '{required, properties: (.properties | map_values(.type))}' schema.json
+# List the schema's required fields and full property definitions
+jq '{required, properties}' schema.json
 
-# List the failing event's fields
-jq 'keys' failed_event.json
+# Extract the entity data that failed validation into entity.json first —
+# the fields to compare live in the unstruct_event / context entity payload,
+# not at the top level of the bad-row wrapper. Then list its fields:
+jq 'keys' entity.json
 ```
 
-Missing required fields, extra fields not in `properties`, and type
-mismatches account for nearly all validation errors.
+Compare the entity's fields against `required` and `properties`. Check for
+missing required fields and unexpected extra fields first, then check each
+value against its full property definition — `type`, and equally the
+constraint keywords (`enum`, `pattern`, `format`, `minimum`/`maximum`,
+array `items`) that the error catalogue above documents.
 
 ## Quick Reference
 

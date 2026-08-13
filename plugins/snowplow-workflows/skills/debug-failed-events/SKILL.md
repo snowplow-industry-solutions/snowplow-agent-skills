@@ -149,11 +149,19 @@ curl -fsS -H "apikey: YOUR_API_KEY" \
 
 1. **Compare event data with schema**
    ```bash
-   # Fetch the schema, then compare field-by-field against the failing event
-   curl -H "apikey: YOUR_API_KEY" \
-     "https://your-org.iglu.snplow.net/api/schemas/iglu:com.example/event/jsonschema/1-0-0" > schema.json
-   jq '{required, properties: (.properties | map_values(.type))}' schema.json
-   jq 'keys' failed_event.json
+   # Fetch the schema (-f fails loudly on 404 instead of saving the error body)
+   curl -fsS -H "apikey: YOUR_API_KEY" \
+     "https://your-org.iglu.snplow.net/api/schemas/com.example/event/jsonschema/1-0-0" > schema.json
+
+   # Required fields plus FULL property definitions — keep enum/pattern/format
+   # constraints visible; they fail validation as often as wrong types
+   jq '{required, properties}' schema.json
+
+   # Extract the entity data that failed validation into entity.json first.
+   # The fields to compare are nested in the unstruct_event / context entity
+   # payload — NOT at the top level of the bad-row wrapper, where jq would
+   # only show wrapper keys like ["collectorPayload","errors","timestamp"].
+   jq 'keys' entity.json
    ```
 
 2. **Identify specific violation**
