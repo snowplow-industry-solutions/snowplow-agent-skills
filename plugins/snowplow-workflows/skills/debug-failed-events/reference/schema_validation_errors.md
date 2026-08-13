@@ -396,20 +396,35 @@ if (items.length > 0) {
 const uniqueItems = [...new Set(items)];
 ```
 
-## Diagnostic Tool
+## Diagnostic Approach
 
-Use the comparison script to identify all validation errors:
+Fetch the schema and compare the failing event field-by-field:
 
 ```bash
-python scripts/compare_event_schema.py \
-  --event-file failed_event.json \
-  --schema "iglu:com.example/event/jsonschema/1-0-0"
+# Fetch the schema from your registry (-f fails loudly if the schema is missing)
+curl -fsS -H "apikey: YOUR_API_KEY" \
+  "https://your-org.iglu.snplow.net/api/schemas/com.example/event/jsonschema/1-0-0" > schema.json
+
+# List the schema's required fields and full property definitions
+jq '{required, properties}' schema.json
+
+# Extract the entity data that failed validation into entity.json first —
+# the fields to compare live in the unstruct_event / context entity payload,
+# not at the top level of the bad-row wrapper.
+# e.g. for an enriched/pipeline bad row (adjust the path for your format;
+# a Micro bad row has no `event` key — its entity sits in the collector
+# payload's ue_pr/ue_px tracker parameter, base64-decode ue_px):
+jq '.event.unstruct_event.data.data' bad_row.json > entity.json
+
+# Then list its fields:
+jq 'keys' entity.json
 ```
 
-This outputs:
-- All validation errors
-- Field-by-field comparison
-- Suggested fixes
+Compare the entity's fields against `required` and `properties`. Check for
+missing required fields and unexpected extra fields first, then check each
+value against its full property definition — `type`, and equally the
+constraint keywords (`enum`, `pattern`, `format`, `minimum`/`maximum`,
+array `items`) that the error catalogue above documents.
 
 ## Quick Reference
 

@@ -58,7 +58,10 @@ Parse error: Invalid JSON at line 12, column 5
 
 **Diagnosis:**
 ```bash
-python scripts/validate_event_json.py --event-file event.json
+# Run against the raw tracker payload itself. A bad-row record from
+# /micro/bad or the warehouse is valid JSON wrapping the broken payload —
+# extract the inner payload first, or this check always passes.
+python3 -m json.tool payload.json
 ```
 
 **Fixes:**
@@ -81,9 +84,16 @@ Error: Missing required platform field 'e' (event type)
 - `dtm` or `ttm`: Timestamp
 
 **Diagnosis:**
-Check event payload for these fields:
+Check each event in the payload for these fields (`null` in the output =
+missing). The params are nested, not top-level — pick the form matching
+what you captured:
 ```bash
-python scripts/validate_event_json.py --event-file event.json --check-snowplow-fields
+# Captured POST body (payload_data envelope) — one line per event:
+jq '.data[] | {e, tv, p, aid, dtm, ttm}' post_body.json
+
+# Bad row: the tracker params live under the raw payload instead —
+# inspect them there (adjust the path to your bad-row format):
+jq '.payload.raw.parameters' bad_row.json
 ```
 
 **Fixes:**
@@ -334,14 +344,17 @@ function checkEventSize(data) {
 ## Diagnostic Tools
 
 ```bash
-# Validate JSON structure
-python scripts/validate_event_json.py --event-file event.json
+# Validate JSON structure of the raw payload (extract it from the bad-row
+# wrapper first — the wrapper is valid JSON even when the payload is not)
+python3 -m json.tool payload.json
 
-# Check event size
-python scripts/validate_event_json.py --event-file event.json --check-size
+# Check compact serialized size against the 10000-byte limit above —
+# measure compact form, pretty-printed files overcount
+jq -c . payload.json | wc -c
 
-# Validate Snowplow required fields
-python scripts/validate_event_json.py --event-file event.json --check-snowplow-fields
+# Check required Snowplow fields per event in a POST body
+# (null in the output = missing)
+jq '.data[] | {e, tv, p, aid, dtm, ttm}' post_body.json
 ```
 
 ## Quick Reference

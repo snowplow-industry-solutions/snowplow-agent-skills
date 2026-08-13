@@ -9,24 +9,70 @@ Checks per skill:
   - SKILL.md exists
   - frontmatter parses and contains single-line `name:` and `description:`
   - name is kebab-case and matches the directory name
-  - description ends with a `Triggers: ...` list
+  - name does not collide with a skill in the official `snowplow` plugin
+  - description ends with a `Triggers: ...` list (list is the final content)
   - SKILL.md is <= 500 lines
   - no forbidden files (README.md, CHANGELOG.md, .env) inside the skill dir
-Repo-level:
+  - intra-skill paths referenced in .md files (scripts/, reference/, ...) exist
+Repo-level (--all):
   - root marketplace.json files parse, agree with each other, and every
-    plugin `source` dir exists and contains .claude-plugin/plugin.json
-    whose `name` matches the marketplace entry
+    plugin `source` names an existing dir whose plugin.json `name` matches
+    the marketplace entry
+  - every plugin dir (under plugins/ or named as a marketplace source) has
+    .claude-plugin/plugin.json and .plugin/plugin.json present, parsed,
+    and identical
+  - every skill under every plugin's skills/ dir passes the per-skill checks
 """
+import glob
 import json
+import os
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILLS_DIR = ROOT / "plugins" / "snowplow-workflows" / "skills"
 MAX_LINES = 500
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 FORBIDDEN = {"README.md", "CHANGELOG.md", ".env"}
+
+# 'Triggers:' must start at a word boundary — 'FooTriggers:' is not a
+# trigger list.
+TRIGGERS_RE = re.compile(r"(?<![A-Za-z0-9])Triggers:")
+
+# Skill names in the official `snowplow` product plugin. A skill here with
+# the same name collides when both plugins are installed (the tracking-design
+# -> design-tracking-plan rename happened for exactly this reason).
+RESERVED_SKILL_NAMES = {
+    "console-operations",
+    "implementation-guidance",
+    "pipeline-infrastructure",
+    "signals",
+    "tracking-design",
+    "troubleshooting",
+}
+
+# Path-like references to a skill's own asset directories, e.g.
+# `scripts/analyze.py` or `examples/foo/`.
+SKILL_ASSET_DIRS = ("scripts", "reference", "references", "examples",
+                    "assets", "templates", "troubleshooting")
+_DIRS = "(?:" + "|".join(SKILL_ASSET_DIRS) + ")"
+_REL = r"(?:\.\./|\./)*"
+# (a) File refs: final segment has an extension. The trailing (?![\w-])
+# guard stops prose like 'scripts/foo.py-based' matching as a path; the
+# lookbehind keeps this from firing inside URLs or longer paths.
+FILE_REF_RE = re.compile(
+    r"(?<![\w/.=-])(" + _REL + _DIRS + r"/[A-Za-z0-9_*./-]*\.[A-Za-z0-9]+)(?![\w-])"
+)
+# (b) Directory refs: trailing '/' with at least one named segment after
+# the asset dir — 'scripts/' alone is prose, not a reference.
+DIR_REF_RE = re.compile(
+    r"(?<![\w/.=-])(" + _REL + _DIRS + r"/[A-Za-z0-9_*-][A-Za-z0-9_*/-]*/)(?![\w.-])"
+)
+# (c) Backtick-wrapped refs where the whole span is the path: explicit
+# references, checked even without an extension or trailing slash.
+BACKTICK_REF_RE = re.compile(
+    r"`(" + _REL + _DIRS + r"/[A-Za-z0-9_*./-]+)`"
+)
 
 
 def parse_frontmatter(text: str):
@@ -81,59 +127,176 @@ def check_skill(skill_dir: Path):
             errors.append(f"{label}: name {name!r} is not kebab-case")
         if name != skill_dir.name:
             errors.append(f"{label}: name {name!r} != directory name {skill_dir.name!r}")
+        if name in RESERVED_SKILL_NAMES:
+            errors.append(
+                f"{label}: name {name!r} collides with an official snowplow plugin skill"
+            )
     if not isinstance(desc, str) or not desc:
         errors.append(f"{label}: frontmatter missing `description`")
-    elif "Triggers:" not in desc:
-        errors.append(f"{label}: description lacks a 'Triggers:' list")
+    else:
+        matches = list(TRIGGERS_RE.finditer(desc))
+        tail = desc[matches[-1].end():].strip().rstrip(".") if matches else ""
+        # Heuristic for prose after the trigger list: a semicolon clause, or
+        # '. ' starting a new capitalized sentence. Lowercase after '. '
+        # (e.g., vs.) is treated as part of the list.
+        if not tail or re.search(r";\s*\S|\.\s+[A-Z]", tail):
+            errors.append(f"{label}: description must end with a 'Triggers:' list")
     for f in skill_dir.iterdir():
         if f.name in FORBIDDEN:
             errors.append(f"{label}: forbidden file {f.name}")
+    errors += check_intra_skill_paths(skill_dir)
     return errors
 
 
-def check_marketplaces():
+def check_intra_skill_paths(skill_dir: Path):
+    """Flag references in the skill's .md files to asset paths that don't exist.
+
+    Checked: refs whose final segment has an extension, refs with a
+    trailing '/' and a named segment, and backtick-wrapped path refs
+    (extension or not). Relative refs (./x, ../x) resolve against the
+    referencing .md file's directory; bare refs resolve against the skill
+    root. Refs containing '*' pass if the glob matches anything. Bare
+    prose like "troubleshooting/debugging tips" is ignored.
+    """
+    errors = []
+    for md in sorted(skill_dir.rglob("*.md")):
+        rel_md = md.relative_to(skill_dir)
+        text = md.read_text(encoding="utf-8")
+        refs = set()
+        for regex in (FILE_REF_RE, DIR_REF_RE, BACKTICK_REF_RE):
+            refs.update(m.group(1) for m in regex.finditer(text))
+        for ref in sorted(refs):
+            base = md.parent if ref.startswith(("./", "../")) else skill_dir
+            target = os.path.normpath(base / ref)
+            missing = (not glob.glob(target)) if "*" in ref \
+                else (not Path(target).exists())
+            if missing:
+                errors.append(
+                    f"{skill_dir.name}: {rel_md} references missing path {ref!r}"
+                )
+    return errors
+
+
+def check_plugin_manifest_pair(plugin_dir: Path):
+    """The plugin manifest is duplicated for two loaders; both copies must
+    exist, parse, and be identical."""
+    errors = []
+    manifests = {}
+    for sub in (".claude-plugin", ".plugin"):
+        p = plugin_dir / sub / "plugin.json"
+        rel = f"{sub}/plugin.json"
+        if not p.is_file():
+            errors.append(f"{plugin_dir.name}: missing {rel}")
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            errors.append(f"{plugin_dir.name}: {rel} invalid JSON ({e})")
+            continue
+        if not isinstance(data, dict):
+            errors.append(f"{plugin_dir.name}: {rel} must be a JSON object")
+            continue
+        manifests[rel] = data
+    if len(manifests) == 2:
+        a, b = (json.dumps(manifests[k], sort_keys=True)
+                for k in (".claude-plugin/plugin.json", ".plugin/plugin.json"))
+        if a != b:
+            errors.append(
+                f"{plugin_dir.name}: .claude-plugin/plugin.json and .plugin/plugin.json differ — keep in sync"
+            )
+    return errors
+
+
+def check_marketplaces(root: Path = ROOT):
     errors = []
     catalogs = {}
     for rel in (".claude-plugin/marketplace.json", ".plugin/marketplace.json"):
-        p = ROOT / rel
+        p = root / rel
         if not p.is_file():
             errors.append(f"{rel}: missing")
             continue
         try:
-            catalogs[rel] = json.loads(p.read_text(encoding="utf-8"))
+            data = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError as e:
             errors.append(f"{rel}: invalid JSON ({e})")
+            continue
+        if not isinstance(data, dict):
+            errors.append(f"{rel}: must be a JSON object")
+            continue
+        catalogs[rel] = data
     if len(catalogs) == 2:
         vals = list(catalogs.values())
-        if vals[0] != vals[1]:
+        if json.dumps(vals[0], sort_keys=True) != json.dumps(vals[1], sort_keys=True):
             errors.append(".claude-plugin/ and .plugin/ marketplace.json differ — keep in sync")
     for rel, cat in catalogs.items():
         for entry in cat.get("plugins", []):
-            src = ROOT / entry.get("source", "")
-            manifest = src / ".claude-plugin" / "plugin.json"
+            if not isinstance(entry, dict):
+                errors.append(f"{rel}: plugin entry {entry!r} is not an object")
+                continue
+            src_rel = entry.get("source")
+            if not src_rel:
+                errors.append(f"{rel}: entry {entry.get('name')!r} has no source")
+                continue
+            src = root / src_rel
             if not src.is_dir():
-                errors.append(f"{rel}: plugin source {entry.get('source')} does not exist")
-            elif not manifest.is_file():
-                errors.append(f"{rel}: {entry.get('source')} lacks .claude-plugin/plugin.json")
-            else:
-                declared = json.loads(manifest.read_text(encoding="utf-8")).get("name")
-                if declared != entry.get("name"):
+                errors.append(f"{rel}: plugin source {src_rel!r} does not exist")
+                continue
+            manifest = src / ".claude-plugin" / "plugin.json"
+            if manifest.is_file():
+                try:
+                    data = json.loads(manifest.read_text(encoding="utf-8"))
+                except json.JSONDecodeError:
+                    continue  # reported by the manifest pair check
+                if not isinstance(data, dict):
+                    continue  # reported by the manifest pair check
+                if data.get("name") != entry.get("name"):
                     errors.append(
-                        f"{rel}: entry name {entry.get('name')!r} != plugin.json name {declared!r}"
+                        f"{rel}: entry name {entry.get('name')!r} != plugin.json name {data.get('name')!r}"
                     )
+    return errors
+
+
+def check_all(root: Path = ROOT):
+    """Repo-wide validation: catalogs, every plugin's manifest pair, every
+    plugin's skills — discovered from plugins/* AND marketplace sources, so
+    an unregistered plugin dir is still validated."""
+    errors = list(check_marketplaces(root))
+    plugin_dirs = set()
+    plugins_root = root / "plugins"
+    if plugins_root.is_dir():
+        plugin_dirs.update(p.resolve() for p in plugins_root.iterdir() if p.is_dir())
+    for rel in (".claude-plugin/marketplace.json", ".plugin/marketplace.json"):
+        p = root / rel
+        if not p.is_file():
+            continue
+        try:
+            cat = json.loads(p.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue  # reported by check_marketplaces
+        if not isinstance(cat, dict):
+            continue  # reported by check_marketplaces
+        for entry in cat.get("plugins", []):
+            if not isinstance(entry, dict):
+                continue  # reported by check_marketplaces
+            src = entry.get("source")
+            if src and (root / src).is_dir():
+                plugin_dirs.add((root / src).resolve())
+    for plugin in sorted(plugin_dirs):
+        errors += check_plugin_manifest_pair(plugin)
+        skills_dir = plugin / "skills"
+        if skills_dir.is_dir():
+            for d in sorted(skills_dir.iterdir()):
+                if d.is_dir():
+                    errors += check_skill(d)
     return errors
 
 
 def main():
     args = sys.argv[1:]
-    errors = []
     if args == ["--all"]:
-        errors += check_marketplaces()
-        for d in sorted(SKILLS_DIR.iterdir()):
-            if d.is_dir():
-                errors += check_skill(d)
+        errors = check_all()
     elif len(args) == 1:
-        errors += check_skill(Path(args[0]).resolve())
+        errors = check_skill(Path(args[0]).resolve())
     else:
         print(__doc__)
         return 2

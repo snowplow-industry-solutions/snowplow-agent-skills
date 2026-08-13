@@ -135,8 +135,11 @@ Follow the category-specific diagnostic workflow:
 
 **Fix Pattern:**
 ```bash
-# Check schema deployment
-python scripts/check_schema_deployment.py --schema "iglu:com.example/event/jsonschema/1-0-0"
+# Check schema deployment — returns the schema JSON if deployed.
+# -f makes a missing schema fail loudly (curl: (22) ... 404) instead of
+# printing an error body that looks like a result.
+curl -fsS -H "apikey: YOUR_API_KEY" \
+  "https://your-org.iglu.snplow.net/api/schemas/com.example/event/jsonschema/1-0-0"
 
 # If not deployed, deploy to appropriate environment
 # Then retry event
@@ -146,7 +149,24 @@ python scripts/check_schema_deployment.py --schema "iglu:com.example/event/jsons
 
 1. **Compare event data with schema**
    ```bash
-   python scripts/compare_event_schema.py --event-file failed_event.json --schema "iglu:com.example/event/jsonschema/1-0-0"
+   # Fetch the schema (-f fails loudly on 404 instead of saving the error body)
+   curl -fsS -H "apikey: YOUR_API_KEY" \
+     "https://your-org.iglu.snplow.net/api/schemas/com.example/event/jsonschema/1-0-0" > schema.json
+
+   # Required fields plus FULL property definitions — keep enum/pattern/format
+   # constraints visible; they fail validation as often as wrong types
+   jq '{required, properties}' schema.json
+
+   # Extract the entity data that failed validation into entity.json first.
+   # The fields to compare are nested in the unstruct_event / context entity
+   # payload — NOT at the top level of the bad-row wrapper, where jq would
+   # only show wrapper keys like ["collectorPayload","errors","timestamp"].
+   # e.g. for an enriched/pipeline bad row (adjust the path for your format;
+   # a Micro bad row has no `event` key — its entity sits in the collector
+   # payload's ue_pr/ue_px tracker parameter, base64-decode ue_px):
+   jq '.event.unstruct_event.data.data' bad_row.json > entity.json
+
+   jq 'keys' entity.json
    ```
 
 2. **Identify specific violation**
@@ -182,9 +202,8 @@ See `reference/schema_validation_errors.md` for detailed fixes for:
    - Custom enrichments: Check enrichment code/configuration
 
 3. **Test enrichment in isolation**
-   ```bash
-   python scripts/test_enrichment.py --enrichment-name <name> --event-file failed_event.json
-   ```
+   - API enrichments: call the external API directly (`curl -v` with the same payload the enrichment sends)
+   - Other enrichments: run the event through Micro with only that enrichment enabled (see the setup-micro skill)
 
 **Fix Pattern:**
 - Update enrichment configuration
@@ -193,9 +212,13 @@ See `reference/schema_validation_errors.md` for detailed fixes for:
 
 #### For Malformed Events:
 
-1. **Validate JSON structure**
+1. **Validate JSON structure of the raw payload**
    ```bash
-   python scripts/validate_event_json.py --event-file failed_event.json
+   # A bad-row record is itself valid JSON wrapping the broken payload —
+   # extract the original tracker payload (the collector payload body /
+   # parameters inside the bad row) into payload.json first, or this
+   # check always passes.
+   python3 -m json.tool payload.json
    ```
 
 2. **Check required Snowplow fields**
@@ -260,12 +283,6 @@ The script's `file` mode expects a JSON array of failed-event objects. Each obje
 - `reference/enrichment_errors.md` - Enrichment failure patterns and debugging steps
 - `reference/malformed_events.md` - Handling corrupt or incomplete event payloads
 
-## Examples
-
-- `examples/missing_required_field/` - Complete debugging workflow for missing required property error
-- `examples/schema_not_found/` - Step-by-step resolution of schema resolution failure
-- `examples/type_mismatch/` - Diagnosing and fixing type mismatch errors
-
 ## Common Patterns
 
 **Pattern 1: Schema Not Found in DEV**
@@ -306,10 +323,10 @@ Error: Additional property "debug_flag" not allowed
 
 When standard diagnostic workflow doesn't resolve the issue:
 
-- **Intermittent failures**: See `troubleshooting/intermittent_failures.md`
-- **Multiple error types**: See `troubleshooting/cascading_errors.md`
-- **Schema appears correct but validation fails**: See `troubleshooting/cache_issues.md`
-- **Events work in Micro but fail in pipeline**: See `troubleshooting/environment_differences.md`
+- **Intermittent failures**: usually registry timeouts or rate limits — check registry health and connectivity, not the schema itself
+- **Multiple error types**: fix in pipeline order — schema resolution first, then schema validation, then enrichment
+- **Schema appears correct but validation fails**: suspect caching — restart Micro (`docker compose restart micro`) or wait 1–2 minutes after a schema deployment
+- **Events work in Micro but fail in pipeline**: compare environments — schema deployed to DEV but not PROD, or enrichments enabled in one but not the other
 
 ## Best Practices
 
@@ -317,7 +334,7 @@ When standard diagnostic workflow doesn't resolve the issue:
 2. **Verify schema first** - Most errors are schema-related; confirm schema exists and is correct
 3. **Compare carefully** - Schema validation errors often stem from subtle differences (field names, types)
 4. **Test incrementally** - After each fix, test immediately to confirm resolution
-5. **Use scripts** - Automated analysis is faster and more accurate than manual inspection
+5. **Use `scripts/analyze_failed_events.py`** - Triage failed events before manual inspection
 
 ## Limits and Alternatives
 

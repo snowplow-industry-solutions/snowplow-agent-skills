@@ -134,10 +134,15 @@ For enrichments with external dependencies:
 
 ### 5. Review Event Data
 
-Check if event has required fields for enrichment:
+Check that the fields the enrichment reads are present and non-null —
+substitute the input fields for your enrichment (e.g. `useragent` for the
+UA parser, `user_ipaddress` for the IP lookup), and adjust the jq path to
+where the event payload sits in your bad-row wrapper:
 ```bash
-python scripts/validate_event_json.py --event-file failed_event.json
+jq '{useragent, user_ipaddress}' failed_event.json
 ```
+`null` in the output means the field is missing — the enrichment has no
+input to work with, which is the failure cause to fix in the tracker.
 
 ## Platform-Specific Enrichments
 
@@ -179,12 +184,10 @@ python scripts/validate_event_json.py --event-file failed_event.json
 
 ### 1. Test Enrichments Before Deployment
 
-Test enrichments with sample events:
-```bash
-python scripts/test_enrichment.py \
-  --enrichment-config enrichment.json \
-  --event-file sample_event.json
-```
+Test enrichments with sample events: run them in Snowplow Micro with the
+enrichment configuration mounted (see the setup-micro skill), send a sample
+event, and confirm it lands in `/micro/good` with the expected derived
+context attached.
 
 ### 2. Monitor External Dependencies
 
@@ -226,12 +229,12 @@ curl -v https://api.example.com/endpoint
 # Check database connectivity
 psql -h hostname -U username -d database
 
-# Validate enrichment configuration
-python scripts/validate_enrichment_config.py --config enrichment.json
-
-# Test enrichment with sample event
-python scripts/test_enrichment.py --enrichment api_enrichment --event-file event.json
+# Validate enrichment configuration JSON syntax
+python3 -m json.tool enrichment.json
 ```
+
+To test an enrichment end to end, run it in Micro with the configuration
+mounted (see the setup-micro skill) and send a sample event through.
 
 ## Further Reading
 

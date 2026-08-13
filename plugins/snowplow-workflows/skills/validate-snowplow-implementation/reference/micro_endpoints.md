@@ -173,7 +173,7 @@ Returns only the first 10 good events.
 
 ### Automated Testing Scripts
 
-The test-implementation skill provides scripts that wrap these endpoints:
+This skill provides scripts that wrap these endpoints:
 
 ```bash
 # Check good/bad event counts and show samples
@@ -183,7 +183,7 @@ python scripts/check_good_bad.py --port 9090
 python scripts/check_good_bad.py --port 9090 --show-details
 
 # Reset Micro state
-python scripts/reset_micro.py --port 9090
+curl -X POST http://localhost:9090/micro/reset
 ```
 
 ## Event Fields to Check
