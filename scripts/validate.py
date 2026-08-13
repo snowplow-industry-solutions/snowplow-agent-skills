@@ -14,12 +14,14 @@ Checks per skill:
   - SKILL.md is <= 500 lines
   - no forbidden files (README.md, CHANGELOG.md, .env) inside the skill dir
   - intra-skill paths referenced in .md files (scripts/, reference/, ...) exist
-Repo-level:
+Repo-level (--all):
   - root marketplace.json files parse, agree with each other, and every
-    plugin `source` dir exists and contains .claude-plugin/plugin.json
-    whose `name` matches the marketplace entry
-  - each plugin's .claude-plugin/plugin.json and .plugin/plugin.json are
-    both present, parse, and are identical
+    plugin `source` names an existing dir whose plugin.json `name` matches
+    the marketplace entry
+  - every plugin dir (under plugins/ or named as a marketplace source) has
+    .claude-plugin/plugin.json and .plugin/plugin.json present, parsed,
+    and identical
+  - every skill under every plugin's skills/ dir passes the per-skill checks
 """
 import glob
 import json
@@ -29,7 +31,6 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILLS_DIR = ROOT / "plugins" / "snowplow-workflows" / "skills"
 MAX_LINES = 500
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 FORBIDDEN = {"README.md", "CHANGELOG.md", ".env"}
@@ -252,17 +253,43 @@ def check_marketplaces(root: Path = ROOT):
     return errors
 
 
+def check_all(root: Path = ROOT):
+    """Repo-wide validation: catalogs, every plugin's manifest pair, every
+    plugin's skills — discovered from plugins/* AND marketplace sources, so
+    an unregistered plugin dir is still validated."""
+    errors = list(check_marketplaces(root))
+    plugin_dirs = set()
+    plugins_root = root / "plugins"
+    if plugins_root.is_dir():
+        plugin_dirs.update(p.resolve() for p in plugins_root.iterdir() if p.is_dir())
+    for rel in (".claude-plugin/marketplace.json", ".plugin/marketplace.json"):
+        p = root / rel
+        if not p.is_file():
+            continue
+        try:
+            cat = json.loads(p.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue  # reported by check_marketplaces
+        for entry in cat.get("plugins", []):
+            src = entry.get("source")
+            if src and (root / src).is_dir():
+                plugin_dirs.add((root / src).resolve())
+    for plugin in sorted(plugin_dirs):
+        errors += check_plugin_manifest_pair(plugin)
+        skills_dir = plugin / "skills"
+        if skills_dir.is_dir():
+            for d in sorted(skills_dir.iterdir()):
+                if d.is_dir():
+                    errors += check_skill(d)
+    return errors
+
+
 def main():
     args = sys.argv[1:]
-    errors = []
     if args == ["--all"]:
-        errors += check_marketplaces()
-        errors += check_plugin_manifest_pair(ROOT / "plugins" / "snowplow-workflows")
-        for d in sorted(SKILLS_DIR.iterdir()):
-            if d.is_dir():
-                errors += check_skill(d)
+        errors = check_all()
     elif len(args) == 1:
-        errors += check_skill(Path(args[0]).resolve())
+        errors = check_skill(Path(args[0]).resolve())
     else:
         print(__doc__)
         return 2

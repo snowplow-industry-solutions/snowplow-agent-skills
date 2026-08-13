@@ -299,6 +299,41 @@ class TestManifestPairSync(TempDirTest):
         self.assertTrue(any("differ" in e for e in errors), errors)
 
 
+class TestCheckAll(TempDirTest):
+    def _registered_plugin(self):
+        make_marketplace(
+            self.root,
+            [{"name": "p1", "source": "plugins/p1"}],
+            {"plugins/p1": {"name": "p1", "version": "1.0.0"}})
+
+    def test_unregistered_plugin_pair_checked(self):
+        self._registered_plugin()
+        extra = self.root / "plugins" / "extra"
+        (extra / ".claude-plugin").mkdir(parents=True)
+        (extra / ".claude-plugin" / "plugin.json").write_text(
+            json.dumps({"name": "extra", "version": "2.0.0"}), encoding="utf-8")
+        (extra / ".plugin").mkdir()
+        (extra / ".plugin" / "plugin.json").write_text(
+            json.dumps({"name": "extra", "version": "1.0.0"}), encoding="utf-8")
+        errors = validate.check_all(self.root)
+        self.assertTrue(any("extra" in e and "differ" in e for e in errors), errors)
+
+    def test_second_plugin_skills_validated(self):
+        self._registered_plugin()
+        skills = self.root / "plugins" / "p1" / "skills"
+        make_skill(skills, "broken-skill",
+                   description="No trigger list here at all.")
+        errors = validate.check_all(self.root)
+        self.assertTrue(any("broken-skill" in e and "Triggers:" in e
+                            for e in errors), errors)
+
+    def test_clean_tree_passes(self):
+        self._registered_plugin()
+        skills = self.root / "plugins" / "p1" / "skills"
+        make_skill(skills, "good-skill")
+        self.assertEqual(validate.check_all(self.root), [])
+
+
 class TestMarketplaces(TempDirTest):
     def test_valid_marketplace_passes(self):
         make_marketplace(
