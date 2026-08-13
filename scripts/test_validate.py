@@ -169,9 +169,11 @@ class TestDanglingPaths(TempDirTest):
         self.assertEqual(validate.check_skill(skill), [])
 
     def test_url_path_not_flagged(self):
+        # foo.html HAS an extension — only the URL-context guard keeps this
+        # from being flagged, so this test fails if that guard is removed.
         skill = make_skill(
             self.root, "my-skill",
-            body="See https://docs.snowplow.io/docs/reference/foo for docs.")
+            body="See https://docs.snowplow.io/docs/reference/foo.html for docs.")
         self.assertEqual(validate.check_skill(skill), [])
 
     def test_prose_slash_without_extension_not_flagged(self):
@@ -184,6 +186,58 @@ class TestDanglingPaths(TempDirTest):
                            body="Then run scripts/present.py.",
                            files={"scripts/present.py": "print('hi')\n"})
         self.assertEqual(validate.check_skill(skill), [])
+
+    def test_relative_reference_resolved_from_md_dir_fails(self):
+        skill = make_skill(
+            self.root, "my-skill",
+            files={"examples/demo/README.md":
+                   "Run `python ../../scripts/setup.py` first.\n"})
+        errors = validate.check_skill(skill)
+        self.assertTrue(any("missing path" in e and "../../scripts/setup.py" in e
+                            for e in errors), errors)
+
+    def test_relative_reference_resolved_from_md_dir_passes(self):
+        skill = make_skill(
+            self.root, "my-skill",
+            files={"examples/demo/README.md":
+                   "Run `python ../../scripts/setup.py` first.\n",
+                   "scripts/setup.py": "print('hi')\n"})
+        self.assertEqual(validate.check_skill(skill), [])
+
+    def test_backtick_extensionless_reference_fails(self):
+        skill = make_skill(self.root, "my-skill",
+                           body="See `examples/schema_not_found` for a sample.")
+        errors = validate.check_skill(skill)
+        self.assertTrue(any("missing path" in e for e in errors), errors)
+
+    def test_backtick_extensionless_reference_passes(self):
+        skill = make_skill(self.root, "my-skill",
+                           body="See `examples/sample` for a sample.",
+                           files={"examples/sample/event.json": "{}\n"})
+        self.assertEqual(validate.check_skill(skill), [])
+
+    def test_hyphen_suffixed_prose_not_flagged(self):
+        # 'scripts/foo.py-based' is prose about a file, not a path ref.
+        skill = make_skill(self.root, "my-skill",
+                           body="Use the scripts/foo.py-based workflow.")
+        self.assertEqual(validate.check_skill(skill), [])
+
+    def test_sentence_final_bare_dir_not_flagged(self):
+        skill = make_skill(self.root, "my-skill",
+                           body="Put shared helpers in scripts/.")
+        self.assertEqual(validate.check_skill(skill), [])
+
+    def test_glob_reference_passes_when_matches(self):
+        skill = make_skill(self.root, "my-skill",
+                           body="Run the `scripts/*.py` helpers.",
+                           files={"scripts/a.py": "print('hi')\n"})
+        self.assertEqual(validate.check_skill(skill), [])
+
+    def test_glob_reference_fails_when_no_match(self):
+        skill = make_skill(self.root, "my-skill",
+                           body="Run the `scripts/*.py` helpers.")
+        errors = validate.check_skill(skill)
+        self.assertTrue(any("missing path" in e for e in errors), errors)
 
 
 class TestManifestPairSync(TempDirTest):

@@ -21,7 +21,9 @@ Repo-level:
   - each plugin's .claude-plugin/plugin.json and .plugin/plugin.json are
     both present, parse, and are identical
 """
+import glob
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -53,8 +55,23 @@ RESERVED_SKILL_NAMES = {
 # matching inside URLs or longer paths.
 SKILL_ASSET_DIRS = ("scripts", "reference", "references", "examples",
                     "assets", "templates", "troubleshooting")
-INTRA_PATH_RE = re.compile(
-    r"(?<![\w/.-])(?:" + "|".join(SKILL_ASSET_DIRS) + r")/[A-Za-z0-9_./-]+"
+_DIRS = "(?:" + "|".join(SKILL_ASSET_DIRS) + ")"
+_REL = r"(?:\.\./|\./)*"
+# (a) File refs: final segment has an extension. The trailing (?![\w-])
+# guard stops prose like 'scripts/foo.py-based' matching as a path; the
+# lookbehind keeps this from firing inside URLs or longer paths.
+FILE_REF_RE = re.compile(
+    r"(?<![\w/.-])(" + _REL + _DIRS + r"/[A-Za-z0-9_*./-]*\.[A-Za-z0-9]+)(?![\w-])"
+)
+# (b) Directory refs: trailing '/' with at least one named segment after
+# the asset dir — 'scripts/' alone is prose, not a reference.
+DIR_REF_RE = re.compile(
+    r"(?<![\w/.-])(" + _REL + _DIRS + r"/[A-Za-z0-9_*-][A-Za-z0-9_*/-]*/)(?![\w.-])"
+)
+# (c) Backtick-wrapped refs where the whole span is the path: explicit
+# references, checked even without an extension or trailing slash.
+BACKTICK_REF_RE = re.compile(
+    r"`(" + _REL + _DIRS + r"/[A-Za-z0-9_*./-]+)`"
 )
 
 
@@ -134,23 +151,30 @@ def check_skill(skill_dir: Path):
 def check_intra_skill_paths(skill_dir: Path):
     """Flag references in the skill's .md files to asset paths that don't exist.
 
-    Only concrete references are checked — a final path segment with an
-    extension, or a trailing '/' for directories. Bare prose like
-    "troubleshooting/debugging tips" is ignored.
+    Checked: refs whose final segment has an extension, refs with a
+    trailing '/' and a named segment, and backtick-wrapped path refs
+    (extension or not). Relative refs (./x, ../x) resolve against the
+    referencing .md file's directory; bare refs resolve against the skill
+    root. Refs containing '*' pass if the glob matches anything. Bare
+    prose like "troubleshooting/debugging tips" is ignored.
     """
     errors = []
     seen = set()
     for md in sorted(skill_dir.rglob("*.md")):
         rel_md = md.relative_to(skill_dir)
-        for m in INTRA_PATH_RE.finditer(md.read_text(encoding="utf-8")):
-            ref = m.group(0).rstrip(".")
-            last_segment = ref.rstrip("/").rsplit("/", 1)[-1]
-            if not ref.endswith("/") and "." not in last_segment:
-                continue
+        text = md.read_text(encoding="utf-8")
+        refs = set()
+        for regex in (FILE_REF_RE, DIR_REF_RE, BACKTICK_REF_RE):
+            refs.update(m.group(1) for m in regex.finditer(text))
+        for ref in sorted(refs):
             if (rel_md, ref) in seen:
                 continue
             seen.add((rel_md, ref))
-            if not (skill_dir / ref).exists():
+            base = md.parent if ref.startswith(("./", "../")) else skill_dir
+            target = os.path.normpath(base / ref)
+            missing = (not glob.glob(target)) if "*" in ref \
+                else (not Path(target).exists())
+            if missing:
                 errors.append(
                     f"{skill_dir.name}: {rel_md} references missing path {ref!r}"
                 )
