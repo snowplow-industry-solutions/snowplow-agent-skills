@@ -371,6 +371,21 @@ class TestMarketplaces(TempDirTest):
         errors = validate.check_marketplaces(self.root)  # must not raise
         self.assertIsInstance(errors, list)
 
+    def test_non_dict_catalog_reported_and_no_crash(self):
+        # make_marketplace always writes a dict catalog, so write the
+        # non-dict catalog file directly.
+        d = self.root / ".claude-plugin"
+        d.mkdir(parents=True)
+        (d / "marketplace.json").write_text(
+            json.dumps(["not", "a", "dict"]), encoding="utf-8")
+        errors = validate.check_marketplaces(self.root)  # must not raise
+        self.assertTrue(any("JSON object" in e for e in errors), errors)
+
+    def test_non_dict_plugin_entry_reported_and_no_crash(self):
+        make_marketplace(self.root, ["just-a-string"])
+        errors = validate.check_marketplaces(self.root)  # must not raise
+        self.assertTrue(any("is not an object" in e for e in errors), errors)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

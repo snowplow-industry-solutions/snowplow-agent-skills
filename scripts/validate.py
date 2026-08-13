@@ -52,8 +52,7 @@ RESERVED_SKILL_NAMES = {
 }
 
 # Path-like references to a skill's own asset directories, e.g.
-# `scripts/analyze.py` or `examples/foo/`. The lookbehind keeps this from
-# matching inside URLs or longer paths.
+# `scripts/analyze.py` or `examples/foo/`.
 SKILL_ASSET_DIRS = ("scripts", "reference", "references", "examples",
                     "assets", "templates", "troubleshooting")
 _DIRS = "(?:" + "|".join(SKILL_ASSET_DIRS) + ")"
@@ -160,7 +159,6 @@ def check_intra_skill_paths(skill_dir: Path):
     prose like "troubleshooting/debugging tips" is ignored.
     """
     errors = []
-    seen = set()
     for md in sorted(skill_dir.rglob("*.md")):
         rel_md = md.relative_to(skill_dir)
         text = md.read_text(encoding="utf-8")
@@ -168,9 +166,6 @@ def check_intra_skill_paths(skill_dir: Path):
         for regex in (FILE_REF_RE, DIR_REF_RE, BACKTICK_REF_RE):
             refs.update(m.group(1) for m in regex.finditer(text))
         for ref in sorted(refs):
-            if (rel_md, ref) in seen:
-                continue
-            seen.add((rel_md, ref))
             base = md.parent if ref.startswith(("./", "../")) else skill_dir
             target = os.path.normpath(base / ref)
             missing = (not glob.glob(target)) if "*" in ref \
@@ -221,15 +216,23 @@ def check_marketplaces(root: Path = ROOT):
             errors.append(f"{rel}: missing")
             continue
         try:
-            catalogs[rel] = json.loads(p.read_text(encoding="utf-8"))
+            data = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError as e:
             errors.append(f"{rel}: invalid JSON ({e})")
+            continue
+        if not isinstance(data, dict):
+            errors.append(f"{rel}: must be a JSON object")
+            continue
+        catalogs[rel] = data
     if len(catalogs) == 2:
         vals = list(catalogs.values())
         if json.dumps(vals[0], sort_keys=True) != json.dumps(vals[1], sort_keys=True):
             errors.append(".claude-plugin/ and .plugin/ marketplace.json differ — keep in sync")
     for rel, cat in catalogs.items():
         for entry in cat.get("plugins", []):
+            if not isinstance(entry, dict):
+                errors.append(f"{rel}: plugin entry {entry!r} is not an object")
+                continue
             src_rel = entry.get("source")
             if not src_rel:
                 errors.append(f"{rel}: entry {entry.get('name')!r} has no source")
@@ -270,7 +273,11 @@ def check_all(root: Path = ROOT):
             cat = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             continue  # reported by check_marketplaces
+        if not isinstance(cat, dict):
+            continue  # reported by check_marketplaces
         for entry in cat.get("plugins", []):
+            if not isinstance(entry, dict):
+                continue  # reported by check_marketplaces
             src = entry.get("source")
             if src and (root / src).is_dir():
                 plugin_dirs.add((root / src).resolve())

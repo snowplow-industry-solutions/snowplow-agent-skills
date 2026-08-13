@@ -161,6 +161,9 @@ curl -fsS -H "apikey: YOUR_API_KEY" \
    # The fields to compare are nested in the unstruct_event / context entity
    # payload — NOT at the top level of the bad-row wrapper, where jq would
    # only show wrapper keys like ["collectorPayload","errors","timestamp"].
+   # e.g. for a Micro bad row (adjust the path for your bad-row format):
+   jq '.event.unstruct_event.data.data' bad_row.json > entity.json
+
    jq 'keys' entity.json
    ```
 
@@ -329,7 +332,7 @@ When standard diagnostic workflow doesn't resolve the issue:
 2. **Verify schema first** - Most errors are schema-related; confirm schema exists and is correct
 3. **Compare carefully** - Schema validation errors often stem from subtle differences (field names, types)
 4. **Test incrementally** - After each fix, test immediately to confirm resolution
-5. **Use scripts** - Automated analysis is faster and more accurate than manual inspection
+5. **Use `scripts/analyze_failed_events.py`** - Triage failed events before manual inspection
 
 ## Limits and Alternatives
 

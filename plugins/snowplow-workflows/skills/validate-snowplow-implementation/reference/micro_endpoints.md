@@ -173,7 +173,7 @@ Returns only the first 10 good events.
 
 ### Automated Testing Scripts
 
-The test-implementation skill provides scripts that wrap these endpoints:
+This skill provides scripts that wrap these endpoints:
 
 ```bash
 # Check good/bad event counts and show samples

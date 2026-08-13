@@ -410,7 +410,11 @@ jq '{required, properties}' schema.json
 
 # Extract the entity data that failed validation into entity.json first —
 # the fields to compare live in the unstruct_event / context entity payload,
-# not at the top level of the bad-row wrapper. Then list its fields:
+# not at the top level of the bad-row wrapper.
+# e.g. for a Micro bad row (adjust the path for your bad-row format):
+jq '.event.unstruct_event.data.data' bad_row.json > entity.json
+
+# Then list its fields:
 jq 'keys' entity.json
 ```
 
