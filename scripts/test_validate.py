@@ -93,6 +93,31 @@ class TestTriggersSuffix(TempDirTest):
         errors = validate.check_skill(skill)
         self.assertTrue(any("Triggers:" in e for e in errors), errors)
 
+    def test_abbreviation_in_triggers_passes(self):
+        skill = make_skill(
+            self.root, "my-skill",
+            description="Does a thing. Use when testing. "
+                        "Triggers: install foo, e.g. setup, run bar.",
+        )
+        self.assertEqual(validate.check_skill(skill), [])
+
+    def test_semicolon_prose_after_triggers_fails(self):
+        skill = make_skill(
+            self.root, "my-skill",
+            description="Does a thing. Triggers: foo, bar; do not use for "
+                        "pipeline setup.",
+        )
+        errors = validate.check_skill(skill)
+        self.assertTrue(any("Triggers:" in e for e in errors), errors)
+
+    def test_glued_triggers_token_fails(self):
+        skill = make_skill(
+            self.root, "my-skill",
+            description="Does a thing that sets up FooTriggers: blah blah.",
+        )
+        errors = validate.check_skill(skill)
+        self.assertTrue(any("Triggers:" in e for e in errors), errors)
+
 
 class TestReservedNames(TempDirTest):
     def test_reserved_skill_name_fails(self):

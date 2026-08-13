@@ -32,6 +32,10 @@ MAX_LINES = 500
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 FORBIDDEN = {"README.md", "CHANGELOG.md", ".env"}
 
+# 'Triggers:' must start at a word boundary — 'FooTriggers:' is not a
+# trigger list.
+TRIGGERS_RE = re.compile(r"(?<![A-Za-z0-9])Triggers:")
+
 # Skill names in the official `snowplow` product plugin. A skill here with
 # the same name collides when both plugins are installed (the tracking-design
 # -> design-tracking-plan rename happened for exactly this reason).
@@ -113,9 +117,12 @@ def check_skill(skill_dir: Path):
     if not isinstance(desc, str) or not desc:
         errors.append(f"{label}: frontmatter missing `description`")
     else:
-        idx = desc.rfind("Triggers:")
-        tail = desc[idx + len("Triggers:"):].strip().rstrip(".") if idx != -1 else ""
-        if not tail or ". " in tail:
+        matches = list(TRIGGERS_RE.finditer(desc))
+        tail = desc[matches[-1].end():].strip().rstrip(".") if matches else ""
+        # Heuristic for prose after the trigger list: a semicolon clause, or
+        # '. ' starting a new capitalized sentence. Lowercase after '. '
+        # (e.g., vs.) is treated as part of the list.
+        if not tail or re.search(r";\s*\S|\.\s+[A-Z]", tail):
             errors.append(f"{label}: description must end with a 'Triggers:' list")
     for f in skill_dir.iterdir():
         if f.name in FORBIDDEN:
