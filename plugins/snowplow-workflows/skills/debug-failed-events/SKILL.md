@@ -161,7 +161,9 @@ curl -fsS -H "apikey: YOUR_API_KEY" \
    # The fields to compare are nested in the unstruct_event / context entity
    # payload — NOT at the top level of the bad-row wrapper, where jq would
    # only show wrapper keys like ["collectorPayload","errors","timestamp"].
-   # e.g. for a Micro bad row (adjust the path for your bad-row format):
+   # e.g. for an enriched/pipeline bad row (adjust the path for your format;
+   # a Micro bad row has no `event` key — its entity sits in the collector
+   # payload's ue_pr/ue_px tracker parameter, base64-decode ue_px):
    jq '.event.unstruct_event.data.data' bad_row.json > entity.json
 
    jq 'keys' entity.json
