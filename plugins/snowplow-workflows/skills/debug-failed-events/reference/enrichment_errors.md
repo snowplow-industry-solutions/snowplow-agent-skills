@@ -134,10 +134,15 @@ For enrichments with external dependencies:
 
 ### 5. Review Event Data
 
-Check if event has required fields for enrichment:
+Check that the fields the enrichment reads are present and non-null —
+substitute the input fields for your enrichment (e.g. `useragent` for the
+UA parser, `user_ipaddress` for the IP lookup), and adjust the jq path to
+where the event payload sits in your bad-row wrapper:
 ```bash
-jq . failed_event.json
+jq '{useragent, user_ipaddress}' failed_event.json
 ```
+`null` in the output means the field is missing — the enrichment has no
+input to work with, which is the failure cause to fix in the tracker.
 
 ## Platform-Specific Enrichments
 
