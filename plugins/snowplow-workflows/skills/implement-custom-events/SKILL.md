@@ -35,20 +35,24 @@ Branch on what the user has provided:
 
 - **No specific tracking ask**: Explore the codebase to identify candidate events. Look for user actions (clicks, submits, navigations), state transitions, and lifecycle events. Group by feature area. Propose 3–8 high-value events to start; defer the long tail.
 - **Specific feature provided**: Scope discovery to that feature only — read the relevant files, identify the user actions and outcomes in that flow, and list the entities involved.
-- **PRD / written spec provided**: Extract events, entities, and KPIs from the document. Note any open questions to ask the user before designing.
+- **PRD / written spec provided**: Skim the document to scope the work — feature areas, platforms, and who has to agree. Don't extract events, entities, or KPIs here; step 2 delegates that to `create-data-spec`, whose extraction rules and computability test apply.
 
 If `.snowplow/agent-context.md` exists (created by `setup-snowplow-context`), read it first for vendor, platforms, and collaboration mode.
 
 ### 2. Draft a human-readable tracking spec
 
-Produce a short Markdown spec for the user to review before any design work:
+> May invoke `create-data-spec`.
 
-- **Goal**: one sentence on what these events answer.
-- **Events**: name + trigger + why it matters.
-- **Entities**: name + which events they attach to + key fields.
-- **Open questions**: anything ambiguous from discovery.
+Branch on the input:
 
-Keep this conversational — it's a shared artifact, not a schema yet. Ask the user to confirm or amend before moving on.
+- **PRD / business goals, or KPIs undecided**: invoke the `create-data-spec` skill to produce the spec — its computability test, template, and empty-Open-Questions gate apply. The finished data spec (including its Snowplow-semantics section) is the spec that step 3 hands on.
+- **Small, self-evident feature** — where a full data spec would be ceremony: draft an inline lightweight spec for the user to review before any design work:
+  - **Goal**: one sentence on what these events answer.
+  - **Events**: name + trigger + why it matters.
+  - **Entities**: name + which events they attach to + key fields.
+  - **Open questions**: anything ambiguous from discovery.
+
+  Keep this conversational — it's a shared artifact, not a schema yet. Ask the user to confirm or amend before moving on.
 
 ### 3. Hand the spec to `design-tracking-plan`
 
@@ -152,6 +156,7 @@ Report results back to the user with the events confirmed and any follow-ups.
 
 ## Skills Composed by This Workflow
 
+- `create-data-spec` — step 2, when the input is a PRD/business goals or KPIs are undecided (owns the rigorous data spec).
 - `design-tracking-plan` — steps 3–6 (design + Console creation via the Snowplow MCP).
 - `install-snowplow-tracking` — step 7, only if the tracker isn't installed.
 - `fetch-snowplow-docs` — step 8, to confirm Snowtype support and fetch current SDK APIs.
