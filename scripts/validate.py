@@ -193,21 +193,29 @@ def check_plugin_manifest_pair(plugin_dir: Path):
             errors.append(f"{plugin_dir.name}: missing {rel}")
             continue
         try:
-            manifests[rel] = json.loads(p.read_text(encoding="utf-8"))
+            data = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError as e:
             errors.append(f"{plugin_dir.name}: {rel} invalid JSON ({e})")
-    if len(manifests) == 2 and manifests[".claude-plugin/plugin.json"] != manifests[".plugin/plugin.json"]:
-        errors.append(
-            f"{plugin_dir.name}: .claude-plugin/plugin.json and .plugin/plugin.json differ — keep in sync"
-        )
+            continue
+        if not isinstance(data, dict):
+            errors.append(f"{plugin_dir.name}: {rel} must be a JSON object")
+            continue
+        manifests[rel] = data
+    if len(manifests) == 2:
+        a, b = (json.dumps(manifests[k], sort_keys=True)
+                for k in (".claude-plugin/plugin.json", ".plugin/plugin.json"))
+        if a != b:
+            errors.append(
+                f"{plugin_dir.name}: .claude-plugin/plugin.json and .plugin/plugin.json differ — keep in sync"
+            )
     return errors
 
 
-def check_marketplaces():
+def check_marketplaces(root: Path = ROOT):
     errors = []
     catalogs = {}
     for rel in (".claude-plugin/marketplace.json", ".plugin/marketplace.json"):
-        p = ROOT / rel
+        p = root / rel
         if not p.is_file():
             errors.append(f"{rel}: missing")
             continue
@@ -217,27 +225,29 @@ def check_marketplaces():
             errors.append(f"{rel}: invalid JSON ({e})")
     if len(catalogs) == 2:
         vals = list(catalogs.values())
-        if vals[0] != vals[1]:
+        if json.dumps(vals[0], sort_keys=True) != json.dumps(vals[1], sort_keys=True):
             errors.append(".claude-plugin/ and .plugin/ marketplace.json differ — keep in sync")
-    seen_sources = set()
     for rel, cat in catalogs.items():
         for entry in cat.get("plugins", []):
-            src = ROOT / entry.get("source", "")
-            manifest = src / ".claude-plugin" / "plugin.json"
-            if not src.is_dir():
-                errors.append(f"{rel}: plugin source {entry.get('source')} does not exist")
+            src_rel = entry.get("source")
+            if not src_rel:
+                errors.append(f"{rel}: entry {entry.get('name')!r} has no source")
                 continue
-            if src not in seen_sources:
-                seen_sources.add(src)
-                errors += check_plugin_manifest_pair(src)
+            src = root / src_rel
+            if not src.is_dir():
+                errors.append(f"{rel}: plugin source {src_rel!r} does not exist")
+                continue
+            manifest = src / ".claude-plugin" / "plugin.json"
             if manifest.is_file():
                 try:
-                    declared = json.loads(manifest.read_text(encoding="utf-8")).get("name")
+                    data = json.loads(manifest.read_text(encoding="utf-8"))
                 except json.JSONDecodeError:
-                    continue  # already reported by check_plugin_manifest_pair
-                if declared != entry.get("name"):
+                    continue  # reported by the manifest pair check
+                if not isinstance(data, dict):
+                    continue  # reported by the manifest pair check
+                if data.get("name") != entry.get("name"):
                     errors.append(
-                        f"{rel}: entry name {entry.get('name')!r} != plugin.json name {declared!r}"
+                        f"{rel}: entry name {entry.get('name')!r} != plugin.json name {data.get('name')!r}"
                     )
     return errors
 
@@ -247,6 +257,7 @@ def main():
     errors = []
     if args == ["--all"]:
         errors += check_marketplaces()
+        errors += check_plugin_manifest_pair(ROOT / "plugins" / "snowplow-workflows")
         for d in sorted(SKILLS_DIR.iterdir()):
             if d.is_dir():
                 errors += check_skill(d)

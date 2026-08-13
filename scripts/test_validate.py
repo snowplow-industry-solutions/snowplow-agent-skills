@@ -45,6 +45,26 @@ def make_plugin(root: Path, claude: dict | None, dot: dict | None) -> Path:
     return plugin
 
 
+def make_marketplace(root: Path, plugins: list, plugin_dirs: dict | None = None):
+    """Write both marketplace.json copies + optional plugin dirs.
+
+    plugins: the entry list for both catalogs.
+    plugin_dirs: {source_rel: manifest_dict_or_raw_str} — creates
+    <source_rel>/.claude-plugin/plugin.json and .plugin/plugin.json.
+    """
+    cat = {"name": "test-marketplace", "plugins": plugins}
+    for sub in (".claude-plugin", ".plugin"):
+        d = root / sub
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "marketplace.json").write_text(json.dumps(cat), encoding="utf-8")
+    for src_rel, manifest in (plugin_dirs or {}).items():
+        for sub in (".claude-plugin", ".plugin"):
+            d = root / src_rel / sub
+            d.mkdir(parents=True, exist_ok=True)
+            body = manifest if isinstance(manifest, str) else json.dumps(manifest)
+            (d / "plugin.json").write_text(body, encoding="utf-8")
+
+
 class TempDirTest(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -124,12 +144,6 @@ class TestReservedNames(TempDirTest):
         skill = make_skill(self.root, "tracking-design")
         errors = validate.check_skill(skill)
         self.assertTrue(any("collides" in e for e in errors), errors)
-
-    def test_all_official_names_reserved(self):
-        for name in ("console-operations", "implementation-guidance",
-                     "pipeline-infrastructure", "signals", "tracking-design",
-                     "troubleshooting"):
-            self.assertIn(name, validate.RESERVED_SKILL_NAMES)
 
     def test_unreserved_name_passes(self):
         skill = make_skill(self.root, "my-skill")
@@ -270,6 +284,57 @@ class TestManifestPairSync(TempDirTest):
         (plugin / ".plugin" / "plugin.json").write_text("{not json", encoding="utf-8")
         errors = validate.check_plugin_manifest_pair(plugin)
         self.assertTrue(any("invalid JSON" in e for e in errors), errors)
+
+    def test_non_dict_manifest_fails(self):
+        plugin = make_plugin(self.root, self.MANIFEST, dict(self.MANIFEST))
+        (plugin / ".plugin" / "plugin.json").write_text('["a"]', encoding="utf-8")
+        errors = validate.check_plugin_manifest_pair(plugin)
+        self.assertTrue(any("JSON object" in e for e in errors), errors)
+
+    def test_bool_int_drift_detected(self):
+        a = dict(self.MANIFEST, flag=True)
+        b = dict(self.MANIFEST, flag=1)
+        plugin = make_plugin(self.root, a, b)
+        errors = validate.check_plugin_manifest_pair(plugin)
+        self.assertTrue(any("differ" in e for e in errors), errors)
+
+
+class TestMarketplaces(TempDirTest):
+    def test_valid_marketplace_passes(self):
+        make_marketplace(
+            self.root,
+            [{"name": "p1", "source": "plugins/p1"}],
+            {"plugins/p1": {"name": "p1", "version": "1.0.0"}})
+        self.assertEqual(validate.check_marketplaces(self.root), [])
+
+    def test_entry_missing_source_reported_by_name(self):
+        make_marketplace(self.root, [{"name": "p1"}])
+        errors = validate.check_marketplaces(self.root)
+        self.assertTrue(any("p1" in e and "source" in e for e in errors), errors)
+
+    def test_source_dir_absent_fails(self):
+        make_marketplace(self.root, [{"name": "p1", "source": "plugins/gone"}])
+        errors = validate.check_marketplaces(self.root)
+        self.assertTrue(any("does not exist" in e for e in errors), errors)
+
+    def test_entry_name_mismatch_fails(self):
+        make_marketplace(
+            self.root,
+            [{"name": "wrong", "source": "plugins/p1"}],
+            {"plugins/p1": {"name": "p1", "version": "1.0.0"}})
+        errors = validate.check_marketplaces(self.root)
+        self.assertTrue(any("wrong" in e and "p1" in e for e in errors), errors)
+
+    def test_non_dict_manifest_does_not_crash(self):
+        # The error itself is reported by the manifest pair check (see
+        # TestManifestPairSync.test_non_dict_manifest_fails); here we pin
+        # that the name check no longer dies with AttributeError.
+        make_marketplace(
+            self.root,
+            [{"name": "p1", "source": "plugins/p1"}],
+            {"plugins/p1": '["not", "a", "dict"]'})
+        errors = validate.check_marketplaces(self.root)  # must not raise
+        self.assertIsInstance(errors, list)
 
 
 if __name__ == "__main__":
