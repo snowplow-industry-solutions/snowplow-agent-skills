@@ -152,7 +152,11 @@ Invoke `setup-micro` if Micro isn't already running. Then invoke `validate-snowp
 - Inspect that entities are attached as designed.
 - Diagnose anything that lands in `/bad`.
 
-Report results back to the user with the events confirmed and any follow-ups.
+Report results back to the user:
+
+- Each new event confirmed good in Micro, with entities attached as designed.
+- For every new event and entity, one sentence naming the business question or KPI it answers, sourced from the step 2 spec — the data spec's KPIs, or the lightweight spec's Goal. This mapping is required on both step 2 paths, lightweight spec included.
+- Any follow-ups.
 
 ## Skills Composed by This Workflow
 
