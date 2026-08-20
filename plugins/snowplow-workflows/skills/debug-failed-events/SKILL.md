@@ -61,8 +61,13 @@ python scripts/analyze_failed_events.py --source micro --port 9090
 Or fetch the raw events for manual inspection:
 
 ```bash
-curl http://localhost:9090/micro/bad | jq
+curl -s http://localhost:9090/micro/bad | jq
+
+# just the error messages
+curl -s http://localhost:9090/micro/bad | jq '.[].errors[]?.message // .[].errors[]?'
 ```
+
+Process Micro JSON with `jq` pipes like these — more one-liners in the setup-micro skill's "Reading Micro Output" section.
 
 To browse failed events visually, open `http://localhost:9090/micro/ui` in a browser. The UI is the most reliable source of truth for Micro.
 
@@ -218,7 +223,7 @@ See `reference/schema_validation_errors.md` for detailed fixes for:
    # extract the original tracker payload (the collector payload body /
    # parameters inside the bad row) into payload.json first, or this
    # check always passes.
-   python3 -m json.tool payload.json
+   jq . payload.json
    ```
 
 2. **Check required Snowplow fields**

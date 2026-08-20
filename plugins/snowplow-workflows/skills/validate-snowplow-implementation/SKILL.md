@@ -63,23 +63,24 @@ If they're unsure, recommend testing the most basic event first (page view or sc
 
 ### 3. Generate Test Events
 
-**3.1 Instruct User to Trigger Events**
+The validation loop is: **reset Micro → exercise triggers → read `/micro/good` and `/micro/bad` → compare against the expected event list from step 2.** Steps 3–4 are one pass through that loop.
 
-Provide clear instructions for generating test events:
+**3.1 Reset Micro**
 
-- **Web**: "Open your application in a browser and navigate to trigger the events"
-- **iOS**: "Build and run the app in a simulator or device, then navigate through the app"
-- **Android**: "Build and run the app in an emulator or device, then navigate through the app"
-
-**3.2 Alternative: Use Test Script**
-
-If the tracker is web-based and testing basic events, offer to use the test script:
+Start from a clean slate so every event you read back is attributable to this run:
 
 ```bash
-python scripts/send_test_event.py --port 9090 --event page_view
+curl -X POST http://localhost:9090/micro/reset
 ```
 
-This sends a simple test event directly to Micro for quick validation.
+**3.2 Drive the Application Yourself**
+
+Drive the application with whatever browser automation is available — a webapp-testing skill, a Playwright or Chrome DevTools MCP server, or a scripted driver — and exercise every trigger on the expected event list: navigate the pages, click the buttons, submit the forms. For iOS/Android, drive the simulator/emulator the same way where tooling allows. This step is complete when every expected event has had its trigger exercised.
+
+**3.3 Fallbacks — only when no automation is available**
+
+- Ask the user to exercise each trigger in the application and tell you when done.
+- For web trackers, `python scripts/send_test_event.py --port 9090 --event page_view` sends a synthetic event directly to Micro — useful to confirm the Micro plumbing works, but it does not exercise the application's own tracking code.
 
 ### 4. Check Event Status
 
@@ -97,6 +98,8 @@ This queries:
 
 Alternatively, open `http://localhost:9090/micro/ui` in a browser to manually inspect events and validation errors.
 
+For ad-hoc inspection of the raw JSON, use the `jq` one-liners in the setup-micro skill's "Reading Micro Output" section — they keep the transcript reviewable and re-runnable.
+
 **4.2 Analyze Results**
 
 The script will report:
@@ -105,22 +108,13 @@ The script will report:
 - **Sample event data**: First few events from each endpoint
 - **Validation errors**: Why events failed (if any bad events exist)
 
+Compare the results against the expected event list from step 2. Validation is complete only when every expected event appears in `/micro/good` and `/micro/bad` is empty.
+
 ### 5. Diagnose Issues
 
-**If bad events exist:**
+**If `/micro/bad` is non-empty: invoke the `debug-failed-events` skill before editing any code.**
 
-Call the `debug-failed-events` skill to systematically diagnose and fix validation errors. This skill provides:
-- Automated error categorization and analysis
-- Step-by-step diagnostic workflows
-- Detailed fixes for each error type
-- Reference documentation for complex cases
-
-The debug-failed-events skill will:
-1. Analyze failed event data from Micro
-2. Categorize errors (schema resolution, validation, enrichment, malformed)
-3. Provide category-specific diagnostic workflows
-4. Suggest actionable fixes
-5. Guide through verification
+This is a gate, not a suggestion. That skill owns the error categorization table (schema resolution, schema validation, enrichment, malformed) and the category-specific fixes — apply it rather than re-deriving the diagnosis inline, so every bad row gets categorized consistently.
 
 **If no events appear (neither good nor bad):**
 
@@ -152,7 +146,7 @@ Based on the validation results:
 
 **If bad events exist:**
 - Failed events detected - debugging required
-- The `debug-failed-events` skill (called in step 5) will provide detailed diagnosis
+- The `debug-failed-events` skill (invoked at the step 5 gate) provides the diagnosis
 - Follow the fixes suggested by debug-failed-events skill
 - After applying fixes, return to step 3 to re-test
 
@@ -164,10 +158,7 @@ Based on the validation results:
 
 ### 7. Iterate
 
-After fixes are applied:
-- Re-run the application to generate new test events
-- Re-check good/bad endpoints
-- Repeat until all events validate successfully
+After fixes are applied, run the loop again: reset Micro, exercise the triggers (step 3), read good/bad, compare against the expected list. Repeat until every expected event is in `/micro/good` and `/micro/bad` is empty.
 
 ## Scripts
 

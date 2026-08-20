@@ -1,6 +1,6 @@
 ---
 name: setup-micro
-description: "Set up Snowplow Micro locally for testing tracking implementations — Docker configuration, mounting custom schemas, connecting Iglu registries, and enabling enrichments. Use before validating any new or changed tracking. Triggers: Snowplow Micro, set up Micro, local pipeline, mount schemas, test tracking locally."
+description: "Set up Snowplow Micro locally for testing tracking implementations — Docker configuration, mounting custom schemas, connecting Iglu registries, and enabling enrichments. Use before validating any new or changed tracking. Triggers: Snowplow Micro, set up Micro, local pipeline, mount schemas, local testing environment."
 ---
 
 # Setup Micro
@@ -107,6 +107,26 @@ If issues occur:
 - Events going to /bad → `troubleshooting/validation_failures.md`
 - Iglu registry connection issues → `troubleshooting/iglu_registry_issues.md`
 - Docker problems → `troubleshooting/docker_issues.md`
+
+## Reading Micro Output
+
+Micro's endpoints (`/micro/all`, `/micro/good`, `/micro/bad`) return plain JSON — process them with `jq` one-liners, which stay readable in the transcript and are easy for the user to re-run:
+
+```bash
+# good/bad/total counts
+curl -s localhost:9090/micro/all | jq
+
+# event-type breakdown of good events
+curl -s localhost:9090/micro/good | jq 'group_by(.eventType) | map({event: .[0].eventType, n: length})'
+
+# schema breakdown of good self-describing events (top-level .schema field)
+curl -s localhost:9090/micro/good | jq '[.[].schema] | group_by(.) | map({schema: .[0], n: length})'
+
+# extract error messages from bad rows
+curl -s localhost:9090/micro/bad | jq '.[].errors[]?.message // .[].errors[]?'
+```
+
+Python belongs in this skill's bundled scripts (`setup_micro.py`, `validate_micro.py`, etc.), which are versioned and tested — write ad-hoc JSON processing as `jq` pipes.
 
 ## Scripts
 
