@@ -26,7 +26,7 @@ Don't use this skill when:
 
 - Application codebase is accessible for scanning and modification
 - User has decided to implement Snowplow tracking
-- Package manager available (npm/yarn for JavaScript, CocoaPods/SPM for iOS, Gradle for Android)
+- Package manager available (npm/yarn for JavaScript, CocoaPods/SPM for iOS, Gradle for Android), or a plain-HTML site that loads `sp.js` via a tag
 - Docker installed (for Micro setup)
 
 ## Instructions
@@ -114,8 +114,9 @@ Scan the codebase to find the best location:
 
 Using the fetched documentation, generate complete implementation code including:
 
-1. **Package installation command**
-   - npm/yarn for JavaScript
+1. **Package installation / tracker loading**
+   - **JavaScript with a bundler** (`package.json` present): install `@snowplow/browser-tracker` via npm/yarn.
+   - **JavaScript on a plain-HTML site** (no bundler): ask once how the tracker should load, and let the user decide — **CDN** (zero maintenance, but blockable and a third-party request) or **self-hosted** (first-party and ad-blocker resilient, but you vendor an ~84KB `sp.js` into the repo and own updating it on every tracker release). Both are valid; the trade-off is theirs to make, so surface it rather than picking for them.
    - CocoaPods/SPM for iOS
    - Gradle dependency for Android
 
