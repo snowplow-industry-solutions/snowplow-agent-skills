@@ -178,6 +178,16 @@ Pointer rule: hard-dependency skills carry one explicit pointer line in their co
 
 Ownership rule: the setup skill is the config file's only writer. Consuming skills use values as written — a formatting difference is never a reason to rewrite the file, since a cosmetic rewrite churns the user's working tree for zero information gain.
 
+## Gotchas, Not Docs Duplication
+
+This repo will eventually cover many Snowplow SDKs, and tracker APIs move with every release. A skill that restates tracker or API mechanics becomes a large, stale duplicate of the official docs. Draw the line by source of truth:
+
+- **Mechanics live in the docs.** Initialisation, method signatures, and config options are fetched at run time via the `fetch-snowplow-docs` skill. A skill body carries none of them — it points the agent at `fetch-snowplow-docs` and lets the live docs answer.
+- **The skill body carries what the docs undercover.** Failure modes, the defaults people frequently get wrong, and the mistakes that break downstream models. For example: setting the media player session ID to a static value or to `domain_sessionid` breaks the dbt media model — a gotcha no API reference will tell you.
+- **Source gotchas, don't invent them.** The gotchas for a given area live in the relevant skill and are read in at query time. Add only failure modes you can source; an unsourced, imagined one is worse than none — it sends the agent chasing problems that don't exist.
+
+This is the diagnostic form (see form 5) applied at authoring time: the value a skill adds over the docs is the scar tissue, not the happy-path mechanics.
+
 ## Choosing the Right Form: A Decision Procedure
 
 When you have a chunk of knowledge to encode, ask in order:
@@ -209,10 +219,21 @@ A skill should acknowledge when it's not the right answer. This is especially im
 
 A skill that says "use this approach when X, Y, Z; if you're in situation W, consider these alternatives" is more useful and more credible than one that assumes itself into every situation. It also helps the agent make sensible build/buy recommendations rather than railroading the engineer.
 
+## Frontmatter and Packaging Constraints
+
+Separate from the five forms, a few mechanical rules govern whether a skill will actually load once packaged (e.g. zipped and imported into Claude Desktop):
+
+- **Keep the `description` plain text with no angle brackets.** The Claude Desktop skill validator parses the `description` frontmatter for markup and rejects the import with *"SKILL.md description cannot contain XML tags"* if it finds any `<...>`. This bites when a description names a type or a placeholder — an ARRAY-of-STRUCT column, a `List<T>`, a vendor/name placeholder. Reword them in prose ("ARRAY-of-STRUCT columns", "the vendor placeholder"). The SKILL.md **body** may use angle brackets freely; only the `description` is validated this way.
+- **Keep the `description` a single concrete line (or two).** It's what the agent reads to decide whether to invoke the skill; a vague description hurts triggering.
+- **`name` is kebab-case and matches the skill's directory.**
+- **Package as a single top-level folder** containing `SKILL.md` at its root, with `reference/`, `scripts/`, etc. beneath it. Exclude `.DS_Store` and other OS cruft from the zip.
+
 ## Review Checklist
 
 When reviewing a new skill or major change:
 
+- [ ] Does the skill fetch tracker/API mechanics via `fetch-snowplow-docs` rather than restating them, carrying only sourced gotchas the docs undercover?
+- [ ] Is the `description` plain text with no angle brackets / XML tags, so it passes the Desktop import validator?
 - [ ] Is each chunk of content in the form that makes it most directly usable?
 - [ ] Does the SKILL.md serve as an index and decision tree, or has it become a dumping ground?
 - [ ] Are scripts failing informatively, with errors that tell the agent what to do next?

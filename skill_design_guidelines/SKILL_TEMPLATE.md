@@ -15,12 +15,19 @@
 
 ---
 name: {{ Skill Name }}
-description: {{ One or two sentences stating the problem this skill solves and the audience it's for. Be concrete. }}
+description: {{ One or two sentences stating the problem this skill solves and the audience it's for. Be concrete. Plain text only — no angle brackets. }}
 
 <!--
   Good: "Helps engineers design and validate Iglu-compliant Snowplow schemas for self-describing events and context entities, with the conventions and trade-offs that Snowplow's own field engineering team applies."
 
   Bad: "A skill for working with schemas." (Too vague - doesn't help an agent decide whether to invoke it.)
+
+  HARD CONSTRAINT — keep the description plain text, no angle brackets. The Claude Desktop skill
+  validator parses the description for markup and REJECTS the upload with "SKILL.md description
+  cannot contain XML tags" if it sees any `<...>`. This bites when you name types or placeholders:
+  an ARRAY-of-STRUCT column, a `List<T>`, a vendor/event-name placeholder, an HTML tag. Reword them
+  in prose — "ARRAY-of-STRUCT columns", "the vendor/name placeholders". The SKILL.md *body* can use
+  angle brackets freely; only the description frontmatter is validated this way.
 -->
 
 ---
