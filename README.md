@@ -57,6 +57,7 @@ Where a `snowplow-workflows` skill needs Console access and the `snowplow` plugi
 |---|---|
 | `fetch-snowplow-docs` | Fetches current Snowplow tracker documentation via the docs sitemap — initialisation, tracking calls, plugins — for any platform. |
 | `install-snowplow-tracking` | Installs and configures Snowplow tracking from scratch in web, iOS, or Android apps — tracker init, out-of-the-box events, user identification. |
+| `setup-snowtype` | Sets up Snowtype, Snowplow's typed tracking-code generator — tracker detection, sources from Console or local schemas, lock-file and draft handling, dev-vs-prod schema rules — standalone or delegated from `implement-custom-events`. |
 | `setup-micro` | Sets up Snowplow Micro locally for testing — Docker config, mounting custom schemas, connecting Iglu registries, enabling enrichments. |
 | `validate-snowplow-implementation` | Tests and validates a tracking implementation against Micro — good/bad event counts, attached entities, validation errors, before deploying to production. |
 | `debug-failed-events` | Debugs Snowplow events failing validation locally — pasted bad rows, Micro's `/bad` endpoint — with categorized schema resolution, validation, enrichment, and malformed-event fixes. |
@@ -88,12 +89,12 @@ The skills compose into one journey — decide what to measure, structure it int
 flowchart LR
     ctx["setup-snowplow-context<br/><i>once per project</i>"] -.-> spec
     spec["create-data-spec<br/><i>what to measure</i>"] --> design["design-tracking-plan<br/><i>how to structure it</i>"]
-    design --> inst["instrument the code"]
+    design --> snowtype["setup-snowtype<br/><i>typed tracking code</i>"] --> inst["instrument the code"]
     install["install-snowplow-tracking<br/><i>if no tracker yet</i>"] --> inst
     inst --> micro["setup-micro<br/><i>local test pipeline</i>"] --> validate["validate-snowplow-implementation"]
     validate -->|events in /bad| debug["debug-failed-events"]
     debug -->|fix, re-test| validate
-    e2e["implement-custom-events<br/><i>orchestrates the whole chain</i>"] -.-> spec & design & install & micro & validate
+    e2e["implement-custom-events<br/><i>orchestrates the whole chain</i>"] -.-> spec & design & install & snowtype & micro & validate
     docs["fetch-snowplow-docs<br/><i>utility — any step may call it</i>"]
 
     classDef orchestrator stroke-width:3px
@@ -102,7 +103,7 @@ flowchart LR
     class inst,docs notskill
 ```
 
-Dotted arrows mark delegation, not duplication: `implement-custom-events` drives the other skills in sequence rather than re-implementing them, and `setup-snowplow-context` runs once per project so every later skill reads its context file instead of re-asking. Dashed boxes aren't skills — *instrument the code* is your application change, and `fetch-snowplow-docs` is a utility any step can call for current tracker APIs.
+Dotted arrows mark delegation, not duplication: `implement-custom-events` drives the other skills in sequence rather than re-implementing them, and `setup-snowplow-context` runs once per project so every later skill reads its context file instead of re-asking. `setup-snowtype` sits between design and instrumentation: with event specs in Console it generates the typed `trackXSpec` functions the instrumentation step calls, and it is equally usable on its own to set up or refresh generated code. Dashed boxes aren't skills — *instrument the code* is your application change, and `fetch-snowplow-docs` is a utility any step can call for current tracker APIs.
 
 **Where do I start?** Pick your entry point by what you already have:
 
@@ -110,6 +111,7 @@ Dotted arrows mark delegation, not duplication: `implement-custom-events` drives
 |---|---|
 | A PRD or business goals, tracking undecided | [`create-data-spec`](plugins/snowplow-workflows/skills/create-data-spec/SKILL.md) |
 | Agreed events and entities, need schemas | [`design-tracking-plan`](plugins/snowplow-workflows/skills/design-tracking-plan/SKILL.md) |
+| Event specs in Console, want typed tracking code | [`setup-snowtype`](plugins/snowplow-workflows/skills/setup-snowtype/SKILL.md) |
 | "Just do the whole thing, end to end" | [`implement-custom-events`](plugins/snowplow-workflows/skills/implement-custom-events/SKILL.md) |
 | An app with no Snowplow tracker yet | [`install-snowplow-tracking`](plugins/snowplow-workflows/skills/install-snowplow-tracking/SKILL.md) |
 | Tracking code written, needs verifying | [`setup-micro`](plugins/snowplow-workflows/skills/setup-micro/SKILL.md) → [`validate-snowplow-implementation`](plugins/snowplow-workflows/skills/validate-snowplow-implementation/SKILL.md) |

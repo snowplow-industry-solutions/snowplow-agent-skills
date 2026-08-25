@@ -19,7 +19,7 @@ Source: the field skills map (`docs/snowplow-skills-map.pdf`). Waves are indicat
 | Plugin-specific instrumentation (media, ecom) | Developer | planned | — | 2 |
 | Anonymous tracking implementation | Developer | planned | shared with governance anonymous-tracking skill | 3 |
 | Writing a custom plugin | Developer | planned | — | 3 |
-| Setup Snowtype | Developer | partial | inside `implement-custom-events` step 8; dedicated skill later | 2 |
+| Setup Snowtype | Developer | shipped | `setup-snowtype` (also delegated from `implement-custom-events` step 8) | 2 |
 | Check OOTB events against HTML markup | Developer | planned | — | 3 |
 | Testing locally / Spin up Micro | Developer | shipped | `setup-micro`, `validate-snowplow-implementation` | 1 |
 | Debugging failed events | Developer | shipped | `debug-failed-events` (local-first; production side is *product* `troubleshooting`) | 1 |
