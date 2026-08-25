@@ -93,32 +93,13 @@ Inline check — scan the codebase for an existing Snowplow tracker initialisati
 
 If no initialisation is found, invoke the `install-snowplow-tracking` skill before continuing. If it exists, capture the tracker namespace and collector endpoint so new events use the same tracker.
 
-### 8. Pick an instrumentation approach
+### 8. Set up Snowtype (delegated)
 
-> May invoke `fetch-snowplow-docs`.
+> Invokes `setup-snowtype` in delegated mode.
 
-Determine whether Snowtype (Snowplow's typed-code-generation tool) supports the codebase's primary language. Call `fetch-snowplow-docs` to confirm current Snowtype language support — don't rely on prior knowledge.
+Invoke `setup-snowtype` in **delegated mode** with the event-spec IDs (or tracking plan ID) from step 6 and the tracker namespace from step 7. It confirms language support against the live docs, installs and configures Snowtype, updates the lock file, generates the typed functions, and returns the output path and function names. Do not take up any offer to implement — instrumentation is step 10 of this workflow.
 
-- **Supported language**: install and configure Snowtype, then generate typed event constructors from the schemas created in step 5. Use the generated code during instrumentation.
-- **Unsupported language**: instrument custom self-describing events directly using the tracker SDK's `trackSelfDescribingEvent` (or platform equivalent), passing the Iglu URIs from step 5.
-
-When generating `snowtype.config.json`, the following keys must always be present, even when they have no values — emit empty strings or empty arrays rather than omitting the key:
-
-```json
-{
-  "organizationId": "",
-  "tracker": "",
-  "language": "",
-  "outpath": "",
-  "eventSpecificationIds": [],
-  "dataProductIds": [],
-  "dataStructures": [],
-  "igluCentralSchemas": [],
-  "repositories": []
-}
-```
-
-Populate the values from this run (e.g. `tracker: "@snowplow/browser-tracker"`, `language: "typescript"`, `outpath: "./src/snowtype"`, and the event-spec IDs created in step 6) and leave the rest as empty arrays/strings. Do not drop empty keys — downstream tooling expects every key present.
+If it returns "unsupported tracker/language", instrument custom self-describing events directly with the tracker SDK's `trackSelfDescribingEvent` (or platform equivalent), passing the Iglu URIs from step 5.
 
 ### 9. Specify the implementation plan to the user
 
@@ -135,7 +116,7 @@ Wait for explicit user approval before editing code.
 
 Write the instrumentation:
 
-- Use Snowtype-generated constructors where applicable.
+- Use the Snowtype-generated `trackXSpec` / `createX` functions from step 8 where they exist — they attach the `event_specification` entity for you.
 - Otherwise build self-describing event payloads against the Iglu URIs from step 5.
 - Attach entities to the event call (not as separate `trackSelfDescribingEvent` calls).
 - Reuse the tracker namespace captured in step 7.
@@ -163,7 +144,8 @@ Report results back to the user:
 - `create-data-spec` — step 2, when the input is a PRD/business goals or KPIs are undecided (owns the rigorous data spec).
 - `design-tracking-plan` — steps 3–6 (design + Console creation via the Snowplow MCP).
 - `install-snowplow-tracking` — step 7, only if the tracker isn't installed.
-- `fetch-snowplow-docs` — step 8, to confirm Snowtype support and fetch current SDK APIs.
+- `setup-snowtype` — step 8, delegated mode: Snowtype install, config, lock file, generation.
+- `fetch-snowplow-docs` — any step needing current tracker or Snowtype documentation.
 - `setup-micro` — step 11, if Micro isn't running.
 - `validate-snowplow-implementation` — step 11, to confirm events are good.
 
@@ -171,7 +153,7 @@ Report results back to the user:
 
 - **Schema URIs in code don't match Console**: re-check the Iglu URIs from step 5 output. Vendor/name/version must be exact.
 - **Events reach Micro but appear in `/bad`**: usually a property type mismatch or missing required field. Let `validate-snowplow-implementation` parse the error.
-- **Snowtype-generated types are stale**: re-run Snowtype after every schema change; don't hand-edit generated files.
+- **Snowtype-generated types are stale or new specs are missing from the output**: re-run `setup-snowtype`'s update-then-generate step; the lock file, not Console, decides what `generate` emits. Never hand-edit generated files.
 - **Tracker namespace mismatch**: new events going through a different tracker than existing OOTB events. Standardise on the namespace captured in step 7.
 
 ## Limits
