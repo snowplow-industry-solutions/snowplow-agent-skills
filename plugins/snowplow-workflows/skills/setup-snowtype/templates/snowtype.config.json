@@ -1,0 +1,14 @@
+{
+  "organizationId": "ORG_ID_FROM_CONTEXT_FILE_OR_CONSOLE",
+  "tracker": "TRACKER_PACKAGE_NAME",
+  "language": "LANGUAGE_FOR_THAT_TRACKER",
+  "outpath": "./src/snowtype",
+  "eventSpecificationIds": [],
+  "options": {
+    "commands": {
+      "generate": {
+        "disallowDevSchemas": false
+      }
+    }
+  }
+}
