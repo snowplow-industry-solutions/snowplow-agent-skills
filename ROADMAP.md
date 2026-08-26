@@ -15,7 +15,7 @@ Source: the field skills map (`docs/snowplow-skills-map.pdf`). Waves are indicat
 | Discover tracking opportunities / product event surfaces | PM/Analyst | planned | discovery step of `implement-custom-events` today; dedicated skill later | 2 |
 | Create tracking plans from uncategorised Data Structures | PM/Analyst | planned | — | 3 |
 | Frontend / Mobile / Tracker init / OOTB | Developer | shipped | `install-snowplow-tracking` | 1 |
-| Backend serverside | Developer | planned | extend `install-snowplow-tracking` | 2 |
+| Backend serverside | Developer | shipped | `install-snowplow-tracking` (server-side branch: Node, Python, Java; docs-fallback for other trackers) | 2 |
 | Plugin-specific instrumentation (media, ecom) | Developer | planned | — | 2 |
 | Anonymous tracking implementation | Developer | planned | shared with governance anonymous-tracking skill | 3 |
 | Writing a custom plugin | Developer | planned | — | 3 |

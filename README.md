@@ -56,7 +56,7 @@ Where a `snowplow-workflows` skill needs Console access and the `snowplow` plugi
 |Skill|What it does|
 |---|---|
 | `fetch-snowplow-docs` | Fetches current Snowplow tracker documentation via the docs sitemap — initialisation, tracking calls, plugins — for any platform. |
-| `install-snowplow-tracking` | Installs and configures Snowplow tracking from scratch in web, iOS, or Android apps — tracker init, out-of-the-box events, user identification. |
+| `install-snowplow-tracking` | Installs and configures Snowplow tracking from scratch in web, iOS, Android, or server-side (Node, Python, Java) apps — tracker init, out-of-the-box events, user identification, and stitching server-side events to the client session. |
 | `setup-snowtype` | Sets up Snowtype, Snowplow's typed tracking-code generator — tracker detection, sources from Console or local schemas, lock-file and draft handling, dev-vs-prod schema rules — standalone or delegated from `implement-custom-events`. |
 | `setup-micro` | Sets up Snowplow Micro locally for testing — Docker config, mounting custom schemas, connecting Iglu registries, enabling enrichments. |
 | `validate-snowplow-implementation` | Tests and validates a tracking implementation against Micro — good/bad event counts, attached entities, validation errors, before deploying to production. |
