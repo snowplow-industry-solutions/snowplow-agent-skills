@@ -72,7 +72,7 @@ Follow the install page. This skill adds only:
 - Check `node --version` against the package's `engines` (`npm view @snowplow/snowtype engines`). Below it, say the install will warn `EBADENGINE` and recommend Node 24 — `reference/gotchas.md#environment`.
 - Both `SNOWPLOW_CONSOLE_API_KEY` and `SNOWPLOW_CONSOLE_API_KEY_ID`, in the environment or a git-ignored `.env`. Never write them into the config or echo them into the transcript.
 - The org key is `organizationId`. Docs example blocks that show `orgId` are wrong — `reference/gotchas.md#config-keys`.
-- Prefer `templates/snowtype.config.json` over `init`'s prompts when running non-interactively; write only the keys that will hold values.
+- Prefer `templates/snowtype.config.json` over `init`'s prompts when running non-interactively. Keep **all five** source arrays in the file (`eventSpecificationIds`, `dataProductIds`, `dataStructures`, `igluCentralSchemas`, `repositories`), empty where unused — the validator lets you omit them but the runtime crashes with `reading 'map'` if you do — `reference/gotchas.md#config-keys`.
 
 ### 4. Add sources
 
@@ -85,12 +85,12 @@ Sources, in order of preference:
 
 Set `disallowDevSchemas: false` locally (schemas from `design-tracking-plan` are in DEV) — `reference/gotchas.md#dev-vs-prod`.
 
-### 5. Update the lock file, then generate
+### 5. Generate, and keep the lock file in step
 
 > Invokes `fetch-snowplow-docs` for keep-code-up-to-date if the commands are unfamiliar.
 
-1. `update --yes` **before** the first `generate` whenever specs were added — otherwise `generate` skips them with a warning and produces nothing for them. Specs created minutes ago are drafts: add `--latestDraft` if `update` finds nothing — `reference/gotchas.md#lock-file-and-drafts`.
-2. `generate`. Confirm the output file exists at `outpath` and contains the expected `trackXSpec` / `createX` names. Read the generated file's header comments for `@deprecated` (outdated data structure) or "Hidden data structure" warnings and surface them.
+1. **No `.snowtype-lock.json` yet** (first run): run `generate` — it creates the lock with every configured spec pinned. `update` fails with "Lock file is invalid or corrupted" until the lock exists. **Lock file exists and specs were added**: run `update --yes` **before** `generate`, otherwise `generate` skips the new specs with a warning and emits nothing for them. Specs created minutes ago are drafts: add `--latestDraft` or `update` finds nothing — `reference/gotchas.md#lock-file-and-drafts`.
+2. Confirm the output file exists at `outpath` and contains the expected `trackXSpec` / `createX` names. Read the generated file's header comments for `@deprecated` (outdated data structure) or "Hidden data structure" warnings and surface them. For `@snowplow/javascript-tracker`, grep the output for `^export ` — see `reference/gotchas.md#javascript-tag-tracker`.
 3. Add the scripts from `templates/package-scripts.md`.
 4. Commit `snowtype.config.*` and `.snowtype-lock.json`.
 
@@ -99,7 +99,7 @@ Delegated mode ends here: report `outpath`, the generated function names, and an
 ### 6. Verify the tracker can reach the generated code
 
 - Import-based trackers: the output is a module at `outpath`; import from it.
-- JavaScript tag tracker (`sp.js`): the output is a plain script defining global functions that call `window.snowplow()`; load it with a `<script>` tag **after** the tracker snippet and **before** the app code that calls it.
+- JavaScript tag tracker (`sp.js`): the output is a plain script defining global functions that call `window.snowplow()`; load it with a `<script>` tag **after** the tracker snippet and **before** the app code that calls it, on every page that calls it. 0.17.3 leaves one `export` in that file, which makes a classic script define nothing — strip it in a post-generate step (`templates/package-scripts.md`) and confirm the file parses as a classic script before wiring the tag.
 
 ### 7. Lifecycle (set up only — explain; set up and implement — also apply)
 
@@ -111,16 +111,20 @@ Replace hand-built self-describing payloads with the generated functions: `track
 
 ## Reference Documentation
 
-- `reference/gotchas.md` — the sourced Snowtype pitfalls, grouped by config keys, lock file and drafts, dev vs prod, multi-tracker, local repositories, client-side validation, environment. Read before the first command; ends with the list of docs pages to fetch live.
+- `reference/gotchas.md` — the sourced Snowtype pitfalls, grouped by config keys, lock file and drafts, dev vs prod, multi-tracker, local repositories, JavaScript tag tracker, client-side validation, environment. Read before the first command; ends with the list of docs pages to fetch live.
 
 ## Templates
 
-- `templates/snowtype.config.json` — minimal config with only the keys Snowtype requires. Fill `organizationId`, `tracker`, `language`; replace `eventSpecificationIds` with whichever source array applies; drop `organizationId` for local-only.
-- `templates/package-scripts.md` — npm scripts for one config and for two (`-c`), plus the CI variant.
+- `templates/snowtype.config.json` — config with the three required keys plus all five source arrays (keep them all; fill the ones you use). Fill `organizationId`, `tracker`, `language`; drop `organizationId` for local-only.
+- `templates/package-scripts.md` — npm scripts for one config and for two (`-c`), the JavaScript-tag post-generate step, and the CI variant.
+- `templates/snowtype-postgenerate.js` — the post-generate script for `@snowplow/javascript-tracker` output; copy to the project root and chain after `generate`.
 
 ## Common Failure Modes
 
+- **`update` or `generate` dies with `Cannot read properties of undefined (reading 'map')` right after "Valid configuration found"**: a source array is missing from the config; add all five, empty where unused — `reference/gotchas.md#config-keys`.
+- **`update` says "Lock file is invalid or corrupted" on a fresh project**: no lock file yet; run `generate` first, it creates one — `reference/gotchas.md#lock-file-and-drafts`.
 - **`generate` prints "Skipping N event specification(s) not found in lock file"**: run `update --yes` (add `--latestDraft` for unpublished specs), then `generate` again — `reference/gotchas.md#lock-file-and-drafts`.
+- **Browser console shows `Unexpected token 'export'` and `trackXSpec is not defined` with the JavaScript tag tracker**: the generated file has an `export` line; strip it post-generate — `reference/gotchas.md#javascript-tag-tracker`.
 - **`update` reports no updates although specs were just created**: they are drafts; `update --latestDraft`.
 - **"only deployed on DEV environment" during generate**: `disallowDevSchemas` is on while schemas are still in DEV; turn it off locally, keep it for CI — `reference/gotchas.md#dev-vs-prod`.
 - **"Required API key credentials not detected"**: one of the two env vars is missing; both key and key ID are needed.

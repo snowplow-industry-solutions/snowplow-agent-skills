@@ -4,6 +4,10 @@
   "language": "LANGUAGE_FOR_THAT_TRACKER",
   "outpath": "./src/snowtype",
   "eventSpecificationIds": [],
+  "dataProductIds": [],
+  "dataStructures": [],
+  "igluCentralSchemas": [],
+  "repositories": [],
   "options": {
     "commands": {
       "generate": {

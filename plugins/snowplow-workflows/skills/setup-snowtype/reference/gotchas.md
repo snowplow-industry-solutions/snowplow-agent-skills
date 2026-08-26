@@ -2,11 +2,11 @@
 
 The failure modes the Snowtype docs undercover. Every entry names its source so it can be re-verified when Snowtype releases. Mechanics (commands, flags, config options) are deliberately absent — fetch them live via `fetch-snowplow-docs` from the pages listed at the bottom.
 
-Verified 2026-08-25 against `@snowplow/snowtype@0.17.3` and the docs pages dated 2026-08-25.
+Verified 2026-08-25 against `@snowplow/snowtype@0.17.3` and the docs pages dated 2026-08-25; re-checked 2026-08-26 in a live run against the JavaScript tag tracker (the config-keys, lock-file and `export` entries below were corrected from that run).
 
 ## Config keys
 
-**Only three keys are required.** The 0.17.3 config validator marks `tracker`, `language`, and `outpath` as required. `organizationId` is required only when any Console source (`eventSpecificationIds`, `dataProductIds`, `dataStructures`) is present. All five source arrays are optional. Do not pad the file with empty arrays "because downstream tooling expects every key" — nothing does. *Source: package validator; configuration-reference page.*
+**All five source arrays must be present, even when empty.** The config validator only insists on `tracker`, `language`, and `outpath`, so a file missing `dataProductIds`, `dataStructures`, `igluCentralSchemas`, or `repositories` passes validation ("Valid configuration found") and then `update`/`generate` crash with `Cannot read properties of undefined (reading 'map')` — the runtime maps over each array unguarded. Always write `eventSpecificationIds`, `dataProductIds`, `dataStructures`, `igluCentralSchemas`, and `repositories`, filling the ones you use and leaving the rest `[]`. `organizationId` is needed whenever any Console source is populated. *Source: observed 2026-08-26 on 0.17.3 (crash in the data-product and data-structure resolvers when the key is absent); configuration-reference page.*
 
 **`organizationId`, never `orgId`.** Several docs example blocks (generate-tracking-code, keep-code-up-to-date, example pages) show `"orgId"`. The CLI does not recognise that key — it appears nowhere in the package — so a config copied from those examples cannot reach Console and fails with a credentials/organization error. *Source: package strings (29 × `organizationId`, 0 × `orgId`); docs examples.*
 
@@ -16,7 +16,9 @@ Verified 2026-08-25 against `@snowplow/snowtype@0.17.3` and the docs pages dated
 
 ## Lock file and drafts
 
-**New event specs are silently skipped until the lock file knows them.** `generate` reads `.snowtype-lock.json`, not Console. Adding IDs to the config and running `generate` yields `⚠ Warning: Skipping N event specification(s) not found in lock file. Run 'update --yes' to add new entries.` and produces no code for them. Run `update --yes` (or accept the interactive `update`) before the first `generate` after adding specs. *Source: keep-code-up-to-date; warning string present in package.*
+**The first `generate` creates the lock file; `update` needs it to exist.** On a project with no `.snowtype-lock.json`, `update --yes` fails with `Lock file is invalid or corrupted. Please recover it or delete it, and run 'snowtype generate' so a new one will be created` (ENOENT underneath). So the order is: first ever run → `generate` (it writes the lock with every configured spec pinned); every later change → `update` then `generate`. *Source: error string in package; observed 2026-08-26 on 0.17.3.*
+
+**After that, new event specs are silently skipped until the lock file knows them.** `generate` reads `.snowtype-lock.json`, not Console. Adding IDs to the config of a project that already has a lock and running `generate` yields `⚠ Warning: Skipping N event specification(s) not found in lock file. Run 'update --yes' to add new entries.` and produces no code for them. Run `update --yes` (or accept the interactive `update`) before `generate` whenever specs were added. *Source: keep-code-up-to-date; warning string present in package.*
 
 **Draft event specs are invisible to `update`.** By default `update` checks published versions only. Specs just created — by `design-tracking-plan`, the Console MCP, or by hand — are drafts until published, so `update` reports nothing and the agent concludes Snowtype "cannot see" them. Add `--latestDraft`. *Source: keep-code-up-to-date; flag present in package.*
 
@@ -39,6 +41,10 @@ Verified 2026-08-25 against `@snowplow/snowtype@0.17.3` and the docs pages dated
 **`repositories` paths: CLI root or `data-structures/`, never `data-products/`.** Snowtype reads local data structures only. Pointing at a `data-products/` directory does nothing, silently. Paths are relative to the **config file**, whereas `outpath` is relative to the **current working directory** when the command runs. *Source: snowtype-config ("This won't do anything" example; "Provide the path relative to the location of your configuration file"); configuration-reference (`outpath`).*
 
 **Local repositories cannot supply tracking plans.** No `trackXSpec` functions and no `event_specification` entity from a local-only setup — those need Console sources. *Source: snowtype-config "Snowtype limitation" callout.*
+
+## JavaScript tag tracker
+
+**The `@snowplow/javascript-tracker` output contains one `export` statement.** Everything else in the generated file is plain functions meant to be loaded with a classic `<script>` tag and called as globals, but 0.17.3 emits `export function createEventSpecification(...)`. A classic script throws `SyntaxError: Unexpected token 'export'` on that line and **defines none of the functions** — every `trackXSpec` call then fails with "is not defined". Check the output for `^export ` after generating. Workaround: `templates/snowtype-postgenerate.js` strips the leading `export`; wire it into the `snowtype:generate` npm script so it runs on every regeneration — never hand-edit the file. Loading the file as `type="module"` is not a fix: the functions would no longer be globals. *Source: observed 2026-08-26 in 0.17.3 output; not documented on generate-tracking-code.*
 
 ## Client-side validation
 
