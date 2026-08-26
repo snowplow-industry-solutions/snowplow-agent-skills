@@ -13,7 +13,10 @@ const path = require('path');
 
 const configPath = process.argv[2] || 'snowtype.config.json';
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-const outfile = path.join(path.dirname(configPath), config.outpath, 'snowplow.js');
+// `outpath` is relative to the working directory Snowtype ran in, not to the
+// config file; run this from the same directory as `snowtype generate`.
+// 0.17.3 names the JavaScript-tracker output file `snowplow.js`.
+const outfile = path.resolve(config.outpath, 'snowplow.js');
 
 const before = fs.readFileSync(outfile, 'utf8');
 const after = before.replace(/^export function /gm, 'function ');

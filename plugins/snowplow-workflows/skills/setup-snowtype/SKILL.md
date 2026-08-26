@@ -72,6 +72,7 @@ Follow the install page. This skill adds only:
 - Check `node --version` against the package's `engines` (`npm view @snowplow/snowtype engines`). Below it, say the install will warn `EBADENGINE` and recommend Node 24 — `reference/gotchas.md#environment`.
 - Both `SNOWPLOW_CONSOLE_API_KEY` and `SNOWPLOW_CONSOLE_API_KEY_ID`, in the environment or a git-ignored `.env`. Never write them into the config or echo them into the transcript.
 - The org key is `organizationId`. Docs example blocks that show `orgId` are wrong — `reference/gotchas.md#config-keys`.
+- `namespace` only for the Swift tracker, and only if the user asks for one; any other tracker errors on it.
 - Prefer `templates/snowtype.config.json` over `init`'s prompts when running non-interactively. Keep **all five** source arrays in the file (`eventSpecificationIds`, `dataProductIds`, `dataStructures`, `igluCentralSchemas`, `repositories`), empty where unused — the validator lets you omit them but the runtime crashes with `reading 'map'` if you do — `reference/gotchas.md#config-keys`.
 
 ### 4. Add sources
@@ -89,7 +90,7 @@ Set `disallowDevSchemas: false` locally (schemas from `design-tracking-plan` are
 
 > Invokes `fetch-snowplow-docs` for keep-code-up-to-date if the commands are unfamiliar.
 
-1. **No `.snowtype-lock.json` yet** (first run): run `generate` — it creates the lock with every configured spec pinned. `update` fails with "Lock file is invalid or corrupted" until the lock exists. **Lock file exists and specs were added**: run `update --yes` **before** `generate`, otherwise `generate` skips the new specs with a warning and emits nothing for them. Specs created minutes ago are drafts: add `--latestDraft` or `update` finds nothing — `reference/gotchas.md#lock-file-and-drafts`.
+1. **No `.snowtype-lock.json` yet** (first run): run `generate` — it creates the lock with every configured spec pinned. `update` fails with "Lock file is invalid or corrupted" until the lock exists. **Lock file exists and specs were added**: commit the config first (`update --yes` rewrites it), then run `update --yes` **before** `generate`, otherwise `generate` skips the new specs with a warning and emits nothing for them. Specs created minutes ago are drafts: add `--latestDraft` or `update` finds nothing — `reference/gotchas.md#lock-file-and-drafts`.
 2. Confirm the output file exists at `outpath` and contains the expected `trackXSpec` / `createX` names. Read the generated file's header comments for `@deprecated` (outdated data structure) or "Hidden data structure" warnings and surface them. For `@snowplow/javascript-tracker`, grep the output for `^export ` — see `reference/gotchas.md#javascript-tag-tracker`.
 3. Add the scripts from `templates/package-scripts.md`.
 4. Commit `snowtype.config.*` and `.snowtype-lock.json`.
@@ -103,7 +104,7 @@ Delegated mode ends here: report `outpath`, the generated function names, and an
 
 ### 7. Lifecycle (set up only — explain; set up and implement — also apply)
 
-Cover, from the keep-code-up-to-date page: `update` with `--maximumBump` for data structures; `update --latestDraft` while specs are unpublished; `purge` (commit first); the CI pattern `update --yes` → `generate --disallowDevSchemas`, failing the build on diff. Never hand-edit the output — wrap it.
+Cover, from the keep-code-up-to-date page: `update` with `--maximumBump` for data structures; `update --latestDraft` while specs are unpublished; `purge` (commit first); the CI pattern `update --yes` → `generate --disallowDevSchemas`, failing the build on diff. Never hand-edit the output — wrap it. For `@snowplow/browser-tracker` projects, offer `--validations` for development and test builds only (needs the three Ajv packages) — `reference/gotchas.md#client-side-validation`.
 
 ### 8. Implement (standalone "set up and implement" only)
 

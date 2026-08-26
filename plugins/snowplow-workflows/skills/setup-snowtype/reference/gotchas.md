@@ -30,7 +30,7 @@ Verified 2026-08-25 against `@snowplow/snowtype@0.17.3` and the docs pages dated
 
 **`disallowDevSchemas` must be off during local development.** Schemas created by `design-tracking-plan` / `implement-custom-events` land in the DEV environment first. With `disallowDevSchemas` on (config or `--disallowDevSchemas`), generation fails with "only deployed on DEV environment". Leave it off locally; turn it on in the CI/production generate step so dev-only schemas cannot ship. *Source: command-reference; configuration-reference; string present in package.*
 
-**`update --yes` overwrites the config file.** It is the right call in CI and before a first `generate`, but locally it discards any uncommitted config edits. Commit before running it. *Source: command-reference (`-y` description); keep-code-up-to-date.*
+**`update --yes` overwrites the config file.** It is the right call in CI and whenever specs were added to a project that already has a lock file, but locally it discards any uncommitted config edits. Commit before running it. *Source: command-reference (`-y` description); keep-code-up-to-date.*
 
 ## Multi-tracker
 

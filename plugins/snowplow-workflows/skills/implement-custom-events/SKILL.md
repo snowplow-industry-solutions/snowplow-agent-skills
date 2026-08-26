@@ -97,7 +97,7 @@ If no initialisation is found, invoke the `install-snowplow-tracking` skill befo
 
 > Invokes `setup-snowtype` in delegated mode.
 
-Invoke `setup-snowtype` in **delegated mode** with the event-spec IDs (or tracking plan ID) from step 6 and the tracker namespace from step 7. It confirms language support against the live docs, installs and configures Snowtype, updates the lock file, generates the typed functions, and returns the output path and function names. Do not take up any offer to implement — instrumentation is step 10 of this workflow.
+Invoke `setup-snowtype` in **delegated mode** with the event-spec IDs (or tracking plan ID) from step 6. It confirms language support against the live docs, installs and configures Snowtype, generates the typed functions (creating or updating the lock file as needed), and returns the output path and function names. Do not take up any offer to implement — instrumentation is step 10 of this workflow.
 
 If it returns "unsupported tracker/language", instrument custom self-describing events directly with the tracker SDK's `trackSelfDescribingEvent` (or platform equivalent), passing the Iglu URIs from step 5.
 
@@ -153,7 +153,7 @@ Report results back to the user:
 
 - **Schema URIs in code don't match Console**: re-check the Iglu URIs from step 5 output. Vendor/name/version must be exact.
 - **Events reach Micro but appear in `/bad`**: usually a property type mismatch or missing required field. Let `validate-snowplow-implementation` parse the error.
-- **Snowtype-generated types are stale or new specs are missing from the output**: re-run `setup-snowtype`'s update-then-generate step; the lock file, not Console, decides what `generate` emits. Never hand-edit generated files.
+- **Snowtype-generated types are stale or new specs are missing from the output**: re-run `setup-snowtype`'s lock-file-and-generate step; the lock file, not Console, decides what `generate` emits. Never hand-edit generated files.
 - **Tracker namespace mismatch**: new events going through a different tracker than existing OOTB events. Standardise on the namespace captured in step 7.
 
 ## Limits
