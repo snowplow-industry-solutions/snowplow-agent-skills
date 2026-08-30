@@ -349,5 +349,6 @@ This skill focuses on debugging validation failures. It does not cover:
 - **Performance issues** - Events arriving but slowly; use performance monitoring
 - **Schema design** - Use design-tracking-plan skill for creating/modifying schemas
 - **Initial implementation** - Use install-snowplow-tracking skill for setting up tracking from scratch
+- **Recovering failed events already loaded in the warehouse** - once you've diagnosed a schema-validation failure that landed in a warehouse failed-events table, the `recover-failed-events` skill generates the SQL to reconstruct those events back into the good atomic events table (routes on the warehouse — Athena/Iceberg, BigQuery, Databricks, Snowflake)
 
 For production pipeline failures, this skill provides debugging methodology but may require additional pipeline-specific tools and access.

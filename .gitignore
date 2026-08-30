@@ -1,5 +1,6 @@
 .DS_Store
 __pycache__/
+CONTEXT.md
 # Local agent-harness install artifacts (created by `npx skills add` runs)
 .agents/
 .augment/
