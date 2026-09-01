@@ -129,12 +129,24 @@ warehouses where a per-field extractor choice (strict vs coercing cast) applies.
 ## Phase 4 — Build the recovery expression and prove it
 
 Get the recovery column's real type from the pack's **grounding source** (run the finding-column query,
-or paste a `DESCRIBE` — never confirm the column name from memory). Then build the reconstruction with
-the pack's **reconstruction primitive**:
+or paste a `DESCRIBE` — never confirm the column name from memory).
+
+Then **run the pack's *inspect a validated event* query** and read the shape off a real good-table row.
+Every time, on every warehouse: it is the only grounding Snowflake has, and elsewhere it is what catches
+a misread column type. Whether an unstruct column carries `_schema_version` is settled by looking at a
+good row, never by assuming and offering to check later.
+
+**If that query returns no rows, stop.** Widen the lookback first — a validated example may predate the
+window. If the good table genuinely holds no validated events for this entity, do not recover: see *No
+validated events in the good table* in `reference/failure-context.md`. Tell the user to land one valid
+event so the loader creates and populates the column, then re-run.
+
+Then build the reconstruction with the pack's **reconstruction primitive**:
 
 - **context entity** → an array of one struct, `_schema_version` first, matching the column's type
   field-for-field (name, type, order — strict warehouses insert positionally);
-- **self-describing (unstruct)** → a single struct, **no** `_schema_version`, no array wrapper.
+- **self-describing (unstruct)** → a single struct, no array wrapper, and `_schema_version` present only
+  if the column type or the good row shows it (usually absent — confirm, don't assume).
 
 Emit the **test SELECT** and read the pack's **validation signal** (a `typeof`/`TYPEOF` match, a clean
 run, or a null-count check — warehouses differ on what proves correctness). Prove the reconstructed
@@ -197,7 +209,8 @@ differences from the contexts path:
 
 1. the target is a **single struct**, not an array of structs;
 2. reconstruct with the pack's bare struct primitive (no array wrapper);
-3. it usually has **no `_schema_version`** field — match the column's type as-is;
+3. it usually has **no `_schema_version`** field — but confirm that against the column type and a
+   validated good row rather than assuming it; match what you observe;
 4. drop the array accessor and size function from inspection/validation queries (the pack names them) —
    read the column directly and filter `IS NOT NULL`.
 
@@ -206,6 +219,9 @@ the pass-through preserves it. Do not null sibling entity columns.
 
 ## When this skill is *not* the right answer
 
+- The good table has **no validated events for this entity** — the recovery column is missing, or every
+  row is NULL. Recovering would make you, not the loader, define the column's shape, which can break the
+  loader's next write to that table. Land one valid event first, then recover.
 - The profiling gate shows values that **can't coerce** to the target type — the data is genuinely bad,
   not mis-typed. Fix the source or the schema instead.
 - The failure is an **enrichment or adapter** failure, not schema validation. That's a different

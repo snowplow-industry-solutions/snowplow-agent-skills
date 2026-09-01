@@ -176,13 +176,21 @@ WHERE load_tstamp::DATE > CURRENT_DATE - INTERVAL '<days> DAY'  -- recent sample
 LIMIT 10;
 ```
 
-The `TYPEOF()` of each field on a known-good row is the target type your `::TYPE` casts must produce.
+**Run this every time — it is the only grounding Snowflake has.** The entity column is VARIANT, so there
+is no DDL type to read: the `TYPEOF()` of each field on a known-good row *is* the target type your
+`::TYPE` casts must produce, and a good row is the only thing that tells you whether an unstruct value
+carries `_schema_version`. Never assume that shape and offer to verify it afterwards.
+
 The `load_tstamp` bound above is only there to keep the scan cheap — unlike the failed-side windows it
 is **not** a correctness filter, so if the query returns nothing, **widen or drop it** before drawing
-any conclusion: a validated example may simply predate the window. If the good table genuinely has
-**no** validated events for this entity yet (e.g. a brand-new schema), fall back to reading the field
-types and `required` list from the **Iglu schema JSON** — ask the user for it or its URL. Do not infer
-types from the failed payload alone (the values are exactly what failed validation).
+any conclusion: a validated example may simply predate the window. Do not infer types from the failed
+payload alone (the values are exactly what failed validation).
+
+**If the good table genuinely has no validated events for this entity — the column is missing, or
+every row is NULL — stop and do not recover.** On Snowflake you would have no grounding at all, and the INSERT
+would make you, not the loader, establish the column; if it differs from what the loader later creates, the loader can fail on its next write.
+Tell the user to send one valid event of this schema through the pipeline, let the loader create and
+populate the column, then re-run the recovery. See `reference/failure-context.md`.
 
 ## Field profiling & coercibility confirmation (Phase 3.5 — gate before building the expression)
 

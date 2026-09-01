@@ -163,14 +163,21 @@ WHERE DATE(load_tstamp) > DATE_SUB(CURRENT_DATE(), INTERVAL <days> DAY)  -- rece
 LIMIT 10;
 ```
 
-The authoritative contract is the recovery column's `data_type` (field names, types, order). The
-`load_tstamp` bound above is only there to keep the scan cheap — unlike the failed-side windows it is
-**not** a correctness filter, so if the query returns nothing, **widen or drop it** before drawing any
-conclusion: a validated example may simply predate the window. If the good table genuinely has **no**
-validated events for this entity yet (e.g. a brand-new schema) and the `data_type` is ambiguous, fall
-back to reading the field types and `required` list from the **Iglu schema JSON** — ask the user for it
-or its URL. Do not infer types from the failed payload alone (those values are exactly what failed
-validation).
+**Run this every time — don't assume the shape.** The recovery column's `data_type` is the authoritative
+contract (field names, types, order, and whether `_schema_version` is a field); this query confirms you
+read it correctly against a real row. Whether an unstruct column carries `_schema_version` is settled by
+looking, not by defaulting.
+
+The `load_tstamp` bound above is only there to keep the scan cheap — unlike the failed-side windows it
+is **not** a correctness filter, so if the query returns nothing, **widen or drop it** before drawing
+any conclusion: a validated example may simply predate the window. Do not infer types from the failed
+payload alone (those values are exactly what failed validation).
+
+**If the good table genuinely has no validated events for this entity — the column is missing, or
+every row is NULL — stop and do not recover.** Recovering would make you, not the loader, establish that
+column's shape; if it differs from what the loader later creates, the loader can fail on its next write.
+Tell the user to send one valid event of this schema through the pipeline, let the loader create and
+populate the column, then re-run the recovery. See `reference/failure-context.md`.
 
 ## Field profiling & coercibility confirmation (Phase 3.5 — gate before building the expression)
 

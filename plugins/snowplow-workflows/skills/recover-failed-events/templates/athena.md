@@ -110,6 +110,52 @@ LIMIT 10
 
 ---
 
+## Inspect a validated event (ground the target shape against a real row)
+
+`DESCRIBE` on the good table gives the authoritative struct contract — field names, types, order, and
+whether `_schema_version` is a field. **Run this query too, every time**, to confirm you read that
+contract correctly against a real validated row of the same entity. `<recovery_column>` is the entity
+column from the good-table `DESCRIBE`.
+
+**contexts source** — the column is `ARRAY(ROW(...))`. Trino arrays are **1-based**, so index element
+`[1]`, and size it with `cardinality`:
+
+```sql
+SELECT
+    event_id,
+    <recovery_column>[1] AS validated_entity
+FROM <good_database>.<good_table>
+WHERE load_tstamp > current_timestamp - interval '<days>' day  -- recent sample; widen if 0 rows
+  AND cardinality(<recovery_column>) > 0
+LIMIT 10
+```
+
+**unstruct source** — the `unstruct_event_*` column is a single `ROW`, not an array. Do **not** use
+`[1]` or `cardinality` (both error on a row). Read it directly and filter on `IS NOT NULL`:
+
+```sql
+SELECT
+    event_id,
+    <recovery_column> AS validated_entity
+FROM <good_database>.<good_table>
+WHERE load_tstamp > current_timestamp - interval '<days>' day  -- recent sample; widen if 0 rows
+  AND <recovery_column> IS NOT NULL
+LIMIT 10
+```
+
+The `load_tstamp` bound above is only there to keep the scan cheap — unlike the failed-side windows it
+is **not** a correctness filter, so if the query returns nothing, **widen or drop it** before drawing
+any conclusion: a validated example may simply predate the window. Do not infer types from the failed
+payload alone (those values are exactly what failed validation).
+
+**If the good table genuinely has no validated events for this entity — the column is missing from
+`DESCRIBE`, or every row is NULL — stop and do not recover.** Recovering would make you, not the loader,
+establish that column's shape; if it differs from what the loader later creates, the loader can fail on
+its next write. Tell the user to send one valid event of this schema through the pipeline, let the
+loader create and populate the column, then re-run the recovery. See `reference/failure-context.md`.
+
+---
+
 ## Field profiling & coercibility confirmation (Phase 3.5 — gate before building the expression)
 
 Before writing any recovery expression, profile **every field you'll recover** across **all** failed
