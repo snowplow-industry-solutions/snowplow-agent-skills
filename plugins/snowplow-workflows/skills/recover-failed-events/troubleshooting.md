@@ -27,8 +27,10 @@ An un-coercible value means the population isn't homogeneous — partition it.
 schema field name.
 **Cause:** the tracker sent a field the schema doesn't allow, or a misspelled key (e.g. payload
 `nubmers` vs schema `numbers`).
-**Fix:** reconstruct only the fields the target type lists; drop the stray field. For a rename, read the
-value from the payload key but emit it under the target field name.
+**Fix:** don't decide this yourself — **ask the user** whether the stray field should be dropped or
+mapped onto a field the schema does define, per *Recovering an `additionalProperties` failure* in the
+SKILL.md. Then reconstruct only the fields the target type lists (drop), or read the value from the
+payload key and emit it under the target field name (map).
 
 ### It's a `ResolutionError`, not a `ValidationError`
 **Symptom:** `failure_type` is `ResolutionError` — Iglu couldn't resolve the schema.

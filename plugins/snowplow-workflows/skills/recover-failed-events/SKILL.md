@@ -112,6 +112,10 @@ as a JSON string, a missing field, an extra one), not just its content. Use the 
 construct and scalar extractor. This is where you confirm the fix hypothesis against real values and
 spot compound failures (a renamed field *and* a wrong type together).
 
+If the failure is **`additionalProperties`** — the payload carries a field the schema doesn't define —
+stop and ask the user what should happen to that field before you profile anything. Their answer
+decides which fields Phase 3.5 profiles. See *Recovering an `additionalProperties` failure* below.
+
 ## Phase 3.5 — Profile and confirm coercibility
 
 Before building anything, run the **profiling gate**: a query that *cannot error* (it uses the pack's
@@ -201,6 +205,37 @@ in the failure context** (the original, possibly-wrong one — see the pack's re
 derive the target column and `_schema_version` from the **corrected** URI. Bail out only if the schema
 can't be made to resolve or no target column can exist. Enrichment and adapter failures stay out of
 scope.
+
+## Recovering an `additionalProperties` failure
+
+The event carried a field the schema doesn't define, so the target column has no home for that value.
+Something has to happen to it, and by rule 3 that call is the user's. Dropping it silently loses data;
+guessing a destination for it is worse. **Ask before building the expression.**
+
+Show the stray field and its real values from the payload inspection, then put the options in words:
+
+> "These events failed because they carry a `<field>` the schema doesn't define — example values
+> `<v1>`, `<v2>`. The recovered event can't keep it as-is. How would you like it handled?
+> **1. Drop it** — I recover every other field and discard `<field>`. That value won't be in the
+> recovered events, though the failed-events table still holds the originals.
+> **2. Map it onto a field the schema does define** — if `<field>` is a rename or misspelling of an
+> existing field, I read the value from `<field>` and write it under that field's name. Tell me which.
+> **3. Neither** — if the value genuinely belongs in the schema, the schema needs a new field first.
+> Evolve it, let the loader create the column, then recover."
+
+Handling the answer:
+
+- **Drop** → reconstruct only the fields the target type lists. State in the run summary which field was
+  dropped and how many events it affected. Never let a discard pass unmentioned.
+- **Map** → read from the payload key, emit under the **target** field name; the two don't have to
+  match, since the payload key is a JSON path and the target is a struct field/object key. Confirm the
+  chosen target actually appears in the recovery column's type and in the validated good row (Phase 4)
+  before building.
+- **Neither** → stop. A field the schema doesn't define has no column to recover into, and this skill
+  can't evolve the schema.
+
+If one event tripped on several stray fields, ask per field — a drop and a map can both apply to the
+same event.
 
 ## Recovering an unstruct (self-describing event) failure
 
