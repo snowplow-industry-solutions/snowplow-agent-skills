@@ -160,7 +160,7 @@ Report results back to the user:
 
 Targets the typical custom-event-implementation path. Does not cover:
 
-- Server-side tracking on platforms outside web/iOS/Android (use `design-tracking-plan` plus the relevant SDK directly).
+- Installing a server-side tracker from scratch (use `install-snowplow-tracking`, which covers Node, Python and Java and stitches server events to the client session). This skill instruments custom events on whatever tracker is already installed.
 - Streaming/enrichment configuration.
 - dbt modelling of the loaded events.
 - Promoting schemas from dev to prod environments.

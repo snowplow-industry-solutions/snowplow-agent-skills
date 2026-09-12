@@ -71,7 +71,7 @@ def parse_describe(output):
 def hive_to_athena_type(hive_type):
     # Hive DESCRIBE type -> Trino/Athena type. Rewrite the container keywords and
     # the angle brackets, quote every struct field name, then translate the scalar
-    # keywords that differ (string->varchar, int->integer).
+    # keywords that differ (string->varchar, int->integer, float->real, binary->varbinary).
     t = re.sub(r'\barray<', 'array(', hive_type)
     t = re.sub(r'\bstruct<', 'row(', t)
     t = re.sub(r'\bmap<', 'map(', t)
@@ -84,6 +84,11 @@ def hive_to_athena_type(hive_type):
     # a field literally named "int"/"string" is left alone.
     t = re.sub(r'(?<!")\bstring\b(?!")', 'varchar', t)
     t = re.sub(r'(?<!")\bint\b(?!")', 'integer', t)
+    # float and binary are DDL-only keywords in Athena; the query engine wants
+    # real and varbinary. Snowplow columns are double/string so this rarely bites,
+    # but a CAST(NULL AS float) in the generated INSERT fails to parse.
+    t = re.sub(r'(?<!")\bfloat\b(?!")', 'real', t)
+    t = re.sub(r'(?<!")\bbinary\b(?!")', 'varbinary', t)
     t = re.sub(r'  +', ' ', t)
     return t
 

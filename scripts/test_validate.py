@@ -454,5 +454,51 @@ class TestMarketplaces(TempDirTest):
         self.assertTrue(any("is not an object" in e for e in errors), errors)
 
 
+class TestCrossSkillPaths(TempDirTest):
+    """Cross-skill refs (../<skill>/<asset-dir>/...) must be resolved and
+    existence-checked — the mechanism debug-data-quality uses to consume
+    query-snowplow-data's reference files."""
+
+    def test_cross_skill_ref_to_existing_file_passes(self):
+        make_skill(self.root, "provider-skill",
+                   files={"reference/patterns.md": "# patterns\n"})
+        consumer = make_skill(
+            self.root, "consumer-skill",
+            body="Read `../provider-skill/reference/patterns.md` first.")
+        self.assertEqual(validate.check_skill(consumer), [])
+
+    def test_cross_skill_ref_to_missing_file_fails(self):
+        make_skill(self.root, "provider-skill",
+                   files={"reference/patterns.md": "# patterns\n"})
+        consumer = make_skill(
+            self.root, "consumer-skill",
+            body="Read `../provider-skill/reference/gone.md` first.")
+        errors = validate.check_skill(consumer)
+        self.assertTrue(any("missing path" in e for e in errors), errors)
+
+    def test_cross_skill_ref_to_missing_skill_fails(self):
+        consumer = make_skill(
+            self.root, "consumer-skill",
+            body="Read `../no-such-skill/reference/patterns.md` first.")
+        errors = validate.check_skill(consumer)
+        self.assertTrue(any("missing path" in e for e in errors), errors)
+
+    def test_unbackticked_cross_skill_file_ref_checked(self):
+        consumer = make_skill(
+            self.root, "consumer-skill",
+            body="See ../provider-skill/reference/patterns.md for details.")
+        errors = validate.check_skill(consumer)
+        self.assertTrue(any("missing path" in e for e in errors), errors)
+
+    def test_deep_relative_prefix_resolves_from_nested_md(self):
+        make_skill(self.root, "provider-skill",
+                   files={"reference/patterns.md": "# patterns\n"})
+        consumer = make_skill(
+            self.root, "consumer-skill",
+            files={"reference/notes.md":
+                   "See `../../provider-skill/reference/patterns.md`.\n"})
+        self.assertEqual(validate.check_skill(consumer), [])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

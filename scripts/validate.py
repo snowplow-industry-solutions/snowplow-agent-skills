@@ -13,7 +13,8 @@ Checks per skill:
   - description ends with a `Triggers: ...` list (list is the final content)
   - SKILL.md is <= 500 lines
   - no forbidden files (README.md, CHANGELOG.md, .env) inside the skill dir
-  - intra-skill paths referenced in .md files (scripts/, reference/, ...) exist
+  - intra-skill paths referenced in .md files (scripts/, reference/, ...) exist,
+    including cross-skill refs into a sibling skill (../<skill>/reference/...)
 Repo-level (--all):
   - root marketplace.json files parse, agree with each other, and every
     plugin `source` names an existing dir whose plugin.json `name` matches
@@ -85,6 +86,20 @@ DIR_REF_RE = re.compile(
 # references, checked even without an extension or trailing slash.
 BACKTICK_REF_RE = re.compile(
     r"`(" + _REL + _DIRS + r"/[A-Za-z0-9_*./-]+)`"
+)
+
+# (d) Cross-skill refs: a relative path that climbs out of this skill into
+# a sibling skill's asset dir, e.g. `../query-snowplow-data/reference/x.md`.
+# These are how one skill consumes another's reference files (single source
+# of truth); they resolve against the referencing .md file's directory like
+# any other ../ ref.
+_SKILL_SEG = r"[a-z0-9]+(?:-[a-z0-9]+)*"
+CROSS_SKILL_FILE_REF_RE = re.compile(
+    r"(?<![\w/.=-])((?:\.\./)+" + _SKILL_SEG + "/" + _DIRS
+    + r"/[A-Za-z0-9_*./-]*\.[A-Za-z0-9]+)(?![\w-])"
+)
+CROSS_SKILL_BACKTICK_REF_RE = re.compile(
+    r"`((?:\.\./)+" + _SKILL_SEG + "/" + _DIRS + r"/[A-Za-z0-9_*./-]+)`"
 )
 
 
@@ -168,15 +183,17 @@ def check_intra_skill_paths(skill_dir: Path):
     trailing '/' and a named segment, and backtick-wrapped path refs
     (extension or not). Relative refs (./x, ../x) resolve against the
     referencing .md file's directory; bare refs resolve against the skill
-    root. Refs containing '*' pass if the glob matches anything. Bare
-    prose like "troubleshooting/debugging tips" is ignored.
+    root. Refs containing '*' pass if the glob matches anything. Cross-skill
+    refs climbing into a sibling skill's asset dirs are also checked.
+    Bare prose like "troubleshooting/debugging tips" is ignored.
     """
     errors = []
     for md in sorted(skill_dir.rglob("*.md")):
         rel_md = md.relative_to(skill_dir)
         text = md.read_text(encoding="utf-8")
         refs = set()
-        for regex in (FILE_REF_RE, DIR_REF_RE, BACKTICK_REF_RE):
+        for regex in (FILE_REF_RE, DIR_REF_RE, BACKTICK_REF_RE,
+                      CROSS_SKILL_FILE_REF_RE, CROSS_SKILL_BACKTICK_REF_RE):
             refs.update(m.group(1) for m in regex.finditer(text))
         for ref in sorted(refs):
             base = md.parent if ref.startswith(("./", "../")) else skill_dir

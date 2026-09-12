@@ -1,8 +1,8 @@
 {
   "name": "snowplow-workflows",
   "displayName": "Snowplow Workflows",
-  "description": "Deep, opinionated Snowplow field workflows — design tracking plans, create data specs, instrument and validate tracking locally with Micro, and run end-to-end custom event implementation. Install the official snowplow plugin alongside for Console access via MCP.",
-  "version": "0.1.0",
+  "description": "Deep, opinionated Snowplow field workflows — design tracking plans, create data specs, instrument and validate tracking locally with Micro, run end-to-end custom event implementation, and recover failed events back into the warehouse. Install the official snowplow plugin alongside for Console access via MCP.",
+  "version": "0.2.0",
   "author": {
     "name": "Snowplow",
     "email": "support@snowplow.io",

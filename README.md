@@ -56,7 +56,7 @@ Where a `snowplow-workflows` skill needs Console access and the `snowplow` plugi
 |Skill|What it does|
 |---|---|
 | `fetch-snowplow-docs` | Fetches current Snowplow tracker documentation via the docs sitemap — initialisation, tracking calls, plugins — for any platform. |
-| `install-snowplow-tracking` | Installs and configures Snowplow tracking from scratch in web, iOS, or Android apps — tracker init, out-of-the-box events, user identification. |
+| `install-snowplow-tracking` | Installs and configures Snowplow tracking from scratch in web, iOS, Android, or server-side (Node, Python, Java) apps — tracker init, out-of-the-box events, user identification, and stitching server-side events to the client session. |
 | `setup-snowtype` | Sets up Snowtype, Snowplow's typed tracking-code generator — tracker detection, sources from Console or local schemas, lock-file and draft handling, dev-vs-prod schema rules — standalone or delegated from `implement-custom-events`. |
 | `setup-micro` | Sets up Snowplow Micro locally for testing — Docker config, mounting custom schemas, connecting Iglu registries, enabling enrichments. |
 | `validate-snowplow-implementation` | Tests and validates a tracking implementation against Micro — good/bad event counts, attached entities, validation errors, before deploying to production. |
@@ -74,7 +74,8 @@ Where a `snowplow-workflows` skill needs Console access and the `snowplow` plugi
 |Skill|What it does|
 |---|---|
 | `recover-failed-events` | Recovers Snowplow schema-validation failed events from a warehouse failed-events table back into the good atomic events table — generates validation-gated recovery SQL through an interactive 8-phase flow, routing on the warehouse (Athena/Iceberg, BigQuery, Databricks, Snowflake). |
-| — | More Analyst skills planned — see [Roadmap](#roadmap) (once-off queries, data-quality debugging, dbt package setup, unified/attribution models, semantic definitions). |
+| `query-snowplow-data` | Teaches Snowplow-specific SQL patterns for querying atomic data — unnesting entities, deduplication, bot filtering, timestamps, identity and sessions — dialect-correct for Snowflake, BigQuery, Databricks, and Redshift, including Lake Loader Iceberg tables. |
+| — | More Analyst skills planned — see [Roadmap](#roadmap) (data-quality debugging, dbt package setup, unified/attribution models, semantic definitions). |
 
 ### Governance & Migration
 
@@ -89,6 +90,7 @@ The skills compose into one journey — decide what to measure, structure it int
 ```mermaid
 flowchart LR
     ctx["setup-snowplow-context<br/><i>once per project</i>"] -.-> spec
+    ctx -.-> query["query-snowplow-data<br/><i>analyst SQL patterns</i>"]
     spec["create-data-spec<br/><i>what to measure</i>"] --> design["design-tracking-plan<br/><i>how to structure it</i>"]
     design --> snowtype["setup-snowtype<br/><i>typed tracking code</i>"] --> inst["instrument the code"]
     install["install-snowplow-tracking<br/><i>if no tracker yet</i>"] --> inst
@@ -119,6 +121,7 @@ Dotted arrows mark delegation, not duplication: `implement-custom-events` drives
 | Tracking code written, needs verifying | [`setup-micro`](plugins/snowplow-workflows/skills/setup-micro/SKILL.md) → [`validate-snowplow-implementation`](plugins/snowplow-workflows/skills/validate-snowplow-implementation/SKILL.md) |
 | Events failing / bad rows | [`debug-failed-events`](plugins/snowplow-workflows/skills/debug-failed-events/SKILL.md) |
 | Schema-validation failures already loaded in your warehouse, to recover into the good events table | [`recover-failed-events`](plugins/snowplow-workflows/skills/recover-failed-events/SKILL.md) — routes on the warehouse |
+| Data loaded in your warehouse, writing analysis SQL | [`query-snowplow-data`](plugins/snowplow-workflows/skills/query-snowplow-data/SKILL.md) |
 | Starting Snowplow work in a fresh repo | [`setup-snowplow-context`](plugins/snowplow-workflows/skills/setup-snowplow-context/SKILL.md) — run it first, once |
 
 ## Layout

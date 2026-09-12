@@ -15,7 +15,7 @@ Source: the field skills map (`docs/snowplow-skills-map.pdf`). Waves are indicat
 | Discover tracking opportunities / product event surfaces | PM/Analyst | planned | discovery step of `implement-custom-events` today; dedicated skill later | 2 |
 | Create tracking plans from uncategorised Data Structures | PM/Analyst | planned | — | 3 |
 | Frontend / Mobile / Tracker init / OOTB | Developer | shipped | `install-snowplow-tracking` | 1 |
-| Backend serverside | Developer | planned | extend `install-snowplow-tracking` | 2 |
+| Backend serverside | Developer | shipped | `install-snowplow-tracking` (server-side branch: Node, Python, Java; docs-fallback for other trackers) | 2 |
 | Plugin-specific instrumentation (media, ecom) | Developer | planned | — | 2 |
 | Anonymous tracking implementation | Developer | planned | shared with governance anonymous-tracking skill | 3 |
 | Writing a custom plugin | Developer | planned | — | 3 |
@@ -24,9 +24,9 @@ Source: the field skills map (`docs/snowplow-skills-map.pdf`). Waves are indicat
 | Testing locally / Spin up Micro | Developer | shipped | `setup-micro`, `validate-snowplow-implementation` | 1 |
 | Debugging failed events | Developer | shipped | `debug-failed-events` (local-first; production side is *product* `troubleshooting`) | 1 |
 | Workflow: auto-implement events + monitor in Micro | Developer | shipped | `implement-custom-events` | 1 |
-| Writing once-off queries | Analyst | planned | — | 2 |
+| Writing once-off queries | Analyst | shipped | `query-snowplow-data` | 2 |
 | Debugging data quality issues | Analyst | planned | — | 2 |
-| Event recovery (+ keyhole backfills) | Analyst | planned | — | 3 |
+| Event recovery (+ keyhole backfills) | Analyst | shipped | Athena / BigQuery / Snowflake / Databricks recovery skills; keyhole backfills not yet | 3 |
 | New dbt project for Snowplow models | Analytics Eng | planned | — | 2 |
 | Unified model setup | Analytics Eng | planned | — | 2 |
 | Attribution model setup | Analytics Eng | planned | — | 2 |

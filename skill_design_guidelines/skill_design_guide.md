@@ -188,6 +188,12 @@ This repo will eventually cover many Snowplow SDKs, and tracker APIs move with e
 
 This is the diagnostic form (see form 5) applied at authoring time: the value a skill adds over the docs is the scar tissue, not the happy-path mechanics.
 
+## Cross-Skill References
+
+A reference file needed by two skills lives in exactly one of them — the skill that owns the concept — and the other links to it by relative path (for example `../query-snowplow-data/reference/deduplication.md`). The validator resolves cross-skill paths and fails on danglers, so a rename in the owning skill cannot silently break a consumer.
+
+One caveat: a cross-skill path resolves inside the plugin tree, which is how this repo ships. A skill exported standalone (a single-folder zip) loses the link — if a skill must also work standalone, copy the file instead and accept the sync burden.
+
 ## Choosing the Right Form: A Decision Procedure
 
 When you have a chunk of knowledge to encode, ask in order:

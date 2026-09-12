@@ -447,6 +447,9 @@ SELECT concat(
     '  WHERE DATE(load_tstamp) > DATE_SUB(CURRENT_DATE(), <days>)\n',
     '    AND app_id = \'<app_id>\'\n',
     '    AND f.schema = \'<failing_schema_uri>\'\n',
+    -- mixed-source schema only: scope prep to the source being recovered, exactly as the
+    -- primary script's FAILURE_SOURCE does. Omit if the drill-in showed a single source.
+    '    AND GET_JSON_OBJECT(f.errors[0], \'$.source\') = \'<source>\'\n',
     ')\n',
     'SELECT\n    ',
     columns_sql,
@@ -461,8 +464,11 @@ Notes:
   lines up positionally.
 - `prep` **explodes** the failure array and keeps the element whose `schema` matches the one being
   recovered, aliased `f`. This recovers events where the target schema isn't the first failure element
-  (reading `[0]` would skip them); the recovery expression reads its payload from `f.data`. The target
-  schema appears once per event, so the explode yields one row per recovered event — no fan-out.
+  (reading `[0]` would skip them); the recovery expression reads its payload from `f.data`. For a
+  **single-source** schema the explode yields one row per recovered event. A schema that failed **both**
+  ways carries two entries for the same URI on one event (one `contexts`, one `unstruct`), which would
+  fan out to two rows and insert that `event_id` twice — keep the `<source>` predicate above for those,
+  and recover one source per run into its own column.
 - The generated INSERT is **positional** (no explicit column list): the SELECT expressions are
   emitted in good-table `ordinal_position` order, so they land in the right columns. This is why the
   recovery struct's field order should match the target type.

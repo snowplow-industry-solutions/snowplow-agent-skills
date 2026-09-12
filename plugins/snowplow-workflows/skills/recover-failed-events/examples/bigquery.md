@@ -111,7 +111,7 @@ LIKE `acme-prod.atomic.events`;
 ## Phase 7 — generate the INSERT
 
 Ran the INSERT-generator with `<target_*> = acme-prod.atomic.events_recovery_staging`,
-`<recovery_column> = contexts_com_acme_user_entity_1`, the validated expression (double-quoted), and
+`<recovery_column> = contexts_com_acme_user_entity_1`, the validated expression (triple-quoted), and
 the same window/app_id/schema. It returned one cell: a positional `INSERT ... WITH prep AS (...)
 SELECT ...` where the failure column is `CAST(NULL AS ...)`, `load_tstamp` is `CURRENT_TIMESTAMP()`,
 `contexts_com_acme_user_entity_1` carries the `[STRUCT(...)]`, atomic columns pass through, and
