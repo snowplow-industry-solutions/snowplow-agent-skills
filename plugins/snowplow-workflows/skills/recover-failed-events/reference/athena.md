@@ -83,14 +83,22 @@ DESCRIBE output uses Hive DDL types. Convert to Athena query-expression types fo
 |---|---|
 | `string` | `varchar` |
 | `int` | `integer` |
+| `float` | `real` |
+| `binary` | `varbinary` |
 | `array<...>` | `array(...)` |
 | `struct<...>` | `row(...)` |
 | `map<k,v>` | `map(k,v)` |
 | `field:type` (colon separator) | `"field" type` (quoted name, space separator) |
 
+`scripts/generate_insert_athena.py` owns this mapping in `hive_to_athena_type` — the table is here for
+the hand-assembly fallback, so keep the two in step.
+
 Mechanical steps: `array<`→`array(`, `struct<`→`row(`, `map<`→`map(`, every `>`→`)`, quote every struct
-field name and drop its colon (`name:`→`"name" `), then `string`→`varchar` and `int`→`integer` on the
-*type* tokens only. Quoting every field name unconditionally is always safe in a Trino row type and
+field name and drop its colon (`name:`→`"name" `), then `string`→`varchar`, `int`→`integer`,
+`float`→`real` and `binary`→`varbinary` on the *type* tokens only. `float` and `binary` are DDL-only
+keywords: the query engine wants `real` and `varbinary`, so a `CAST(NULL AS float)` left untranslated
+fails to parse (#51). Snowplow columns are `double`/`string`, so this bites rarely — but `double` is
+already valid in both and must be left alone. Quoting every field name unconditionally is always safe in a Trino row type and
 protects a field named after a reserved word or a type keyword (`date`, `float`, `int`, `map`, …); the
 keyword substitutions skip anything already inside quotes, so a field literally named `int` or `string`
 is left intact.
