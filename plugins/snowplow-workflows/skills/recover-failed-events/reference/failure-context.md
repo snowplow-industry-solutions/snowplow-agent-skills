@@ -29,9 +29,11 @@ schema that isn't an event's *first* failure — it would never appear in the id
 never match a recovery predicate, so those events would go unrecovered silently.
 
 Every query therefore **flattens** the failure array (the dialect's expand construct — see the table)
-and matches the target schema on the flattened element, wherever it sits. The target schema appears at
-most once per event, so the flatten yields one row per matched event (no fan-out). **Recover one schema
-per run**, and re-run identification after each to see what remains.
+and matches the target schema on the flattened element, wherever it sits. The flatten yields one row
+per event **per source**: a schema that failed both as a context entity and as the self-describing
+event carries the same URI on two entries, so matching on schema alone fans that event out to two rows
+and inserts its `event_id` twice. Always scope on **`source`** as well as `schema` — see the next
+section. **Recover one schema per run**, and re-run identification after each to see what remains.
 
 ## The `source` field — contexts vs unstruct (inside `errors`, never top-level)
 
