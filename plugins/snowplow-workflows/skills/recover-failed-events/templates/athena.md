@@ -1,7 +1,7 @@
 # Recovery SQL templates — Athena Iceberg
 
 Fill in every `<placeholder>`. These are the exact statements to hand the user at each phase; the
-reasoning behind them lives in `reference/` and the failure modes in `troubleshooting/`. The SQL here
+reasoning behind them lives in `reference/` and the failure modes in `troubleshooting.md`. The SQL here
 is identical to the canonical recovery flow — do not paraphrase it.
 
 The bundled `scripts/generate_insert_athena.py` implements the column-classification and type-conversion

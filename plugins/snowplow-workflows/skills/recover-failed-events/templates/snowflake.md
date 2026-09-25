@@ -1,7 +1,7 @@
 # Recovery SQL templates — Snowflake
 
 Fill in every `<placeholder>`. These are the exact statements to hand the user at each phase; the
-reasoning behind them lives in `reference/` and the failure modes in `troubleshooting/`. The SQL here
+reasoning behind them lives in `reference/` and the failure modes in `troubleshooting.md`. The SQL here
 is identical to the canonical recovery flow — do not paraphrase it. Unlike the Athena and Databricks
 paths, Snowflake uses **no local script**: the INSERT-generator query reads both tables'
 `INFORMATION_SCHEMA.COLUMNS` and builds the wide INSERT itself.
