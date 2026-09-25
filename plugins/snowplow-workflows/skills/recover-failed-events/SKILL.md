@@ -48,9 +48,17 @@ self-describing event is two separate runs into two different columns.
 ## Phase 1 — Pick the warehouse, then gather tables
 
 First, read `.snowplow/agent-context.md` if the project has one (written by `setup-snowplow-context`).
-Its `warehouse` key tells you which dialect pack to load: `athena`, `bigquery`, `databricks`, or
-`snowflake`. If the file is absent, ask the user which warehouse holds their events, and offer once to
-run `setup-snowplow-context` so this and every later skill stops asking.
+Its `warehouse` key routes the run:
+
+| `warehouse` | What to do |
+|---|---|
+| `athena` / `bigquery` / `databricks` / `snowflake` | Load that dialect pack and continue. |
+| `redshift` | Warehouse SQL recovery **isn't supported on Redshift**. Say so and stop — the failed-events table shape, the entity columns and the reconstruction primitives all differ, and there is no tested pack. Don't improvise one from a sibling dialect. |
+| `none-yet` / `unknown` / missing | Offer to run `setup-snowplow-context` once, then ask which warehouse holds their events. |
+| anything else | Flag the mismatch and stop rather than guessing a pack. |
+
+If the file is absent, ask the user which warehouse holds their events, and offer once to run
+`setup-snowplow-context` so this and every later skill stops asking.
 
 **Load `reference/<warehouse>.md` now.** Everything below refers to the pack's *token table* for the
 dialect. Rows are referred to **by their exact names** — *Failure-array expand*, *Read a `data`
