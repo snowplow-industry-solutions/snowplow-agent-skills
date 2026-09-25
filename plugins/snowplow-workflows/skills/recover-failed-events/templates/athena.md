@@ -131,7 +131,9 @@ LIMIT 10
 ```
 
 **unstruct source** — the `unstruct_event_*` column is a single `ROW`, not an array. Do **not** use
-`[1]` or `cardinality` (both error on a row). Read it directly and filter on `IS NOT NULL`:
+`[1]` or `cardinality` (both error on a row). Read it directly and filter on `IS NOT NULL`. For the
+Phase 7 generator, set `FAILURE_SOURCE = "unstruct"` and point `RECOVERY_COLUMN` at this
+`unstruct_event_*` column:
 
 ```sql
 SELECT
@@ -265,6 +267,72 @@ LIMIT 20
 contexts run, or `row(numbers bigint, true_or_false boolean, words varchar)` (no outer `array(...)`,
 no `_schema_version`) for an unstruct run. Compare it field-for-field against the good-table column type
 (validation checklist: `reference/athena.md`).
+
+---
+
+## Run the generator script (Phase 7 — the primary path)
+
+`scripts/generate_insert_athena.py` implements the column classification, Hive→Athena type conversion
+and reserved-word quoting deterministically, so the wide column list is not hand-assembled. Prefer it
+whenever Python is available; it is standard-library only.
+
+### Step 1 — collect both DESCRIBE outputs
+
+```sql
+DESCRIBE <good_database>.<good_table>;
+DESCRIBE <failed_database>.<failed_table>;
+```
+
+Both are needed: membership in the failed table *is* the atomic-vs-custom classification.
+
+### Step 2 — write the four input files
+
+`good_describe.txt` and `failed_describe.txt` are the raw pastes. `recovery_expression.sql` is the
+validated Phase-4 expression **without** a trailing `AS <column>` — single quotes stay single, it is
+not embedded in a string literal here. And `config.json`:
+
+```json
+{
+  "GOOD_DATABASE": "<good_database>", "GOOD_TABLE": "<good_table>",
+  "FAILED_DATABASE": "<failed_database>", "FAILED_TABLE": "<failed_table>",
+  "RECOVERY_COLUMN": "<recovery_column>",
+  "FAILED_SCHEMA": "<failing_schema_uri>",
+  "APP_ID": "<app_id>",
+  "DAYS_LOOKBACK": <days>,
+  "FAILURE_SOURCE": "<contexts|unstruct>",
+  "TARGET_DATABASE": "<target_database>", "TARGET_TABLE": "<target_table>"
+}
+```
+
+`RECOVERY_COLUMN` is the `contexts_*` column for a **contexts** run or the `unstruct_event_*` column
+for an **unstruct** run — the same column whose `DESCRIBE` type you matched in Phase 4.
+**`FAILURE_SOURCE`** (`contexts` or `unstruct`) scopes `prep` to that source, so a schema that failed
+both ways recovers one source per run into its own column; omit it only when the drill-in showed a
+single source. Leaving it out on a mixed-source schema double-inserts the `event_id`. `TARGET_*` is
+optional (defaults to `GOOD_*`); set it to the **staging** table for the staging path. For a bounded
+window instead of a lookback, drop `DAYS_LOOKBACK` and set `"LOAD_TSTAMP_START": "<start>"` (and
+optionally `"LOAD_TSTAMP_END": "<end>"`) — it prunes partitions.
+
+### Step 3 — run it
+
+```bash
+python3 scripts/generate_insert_athena.py \
+    --config config.json \
+    --good-describe good_describe.txt \
+    --failed-describe failed_describe.txt \
+    --recovery-expr recovery_expression.sql \
+    --out recovery.sql
+```
+
+It prints a sanity summary (good/failed column counts, pass-through, nulled) to stderr and writes the
+runnable INSERT to `recovery.sql`; drop `--out` to print it instead. If it warns the recovery column
+wasn't found, `RECOVERY_COLUMN` doesn't match the good table — fix it and re-run. Review `recovery.sql`
+with the user (recovery column carries the expression, failure column nulled, `load_tstamp` refreshed,
+positional order matches the good table), then have them run it.
+
+**In Claude Desktop** the user must enable *Code execution and file creation* (Settings → Capabilities)
+for the script to run; it's off by default. In Claude Code it's already available. If code execution
+isn't available at all, hand-assemble from the template below.
 
 ---
 

@@ -192,8 +192,8 @@ Use the pack's **INSERT-build mechanism**:
 
 - **Athena / Databricks** — the local script (`scripts/generate_insert_athena.py` /
   `scripts/generate_insert_databricks.py`). Give it the config, the good and failed table type listings,
-  and the recovery expression; it emits a positional `INSERT`. The pack and the script header document
-  the inputs.
+  and the recovery expression; it emits a positional `INSERT`. The template's *Run the generator
+  script* section lists every config key, input file and the invocation; the script header repeats them.
 - **BigQuery / Snowflake** — the in-warehouse generator query, which builds the INSERT from
   `INFORMATION_SCHEMA`. Fill its placeholders with the real values you've established.
 
