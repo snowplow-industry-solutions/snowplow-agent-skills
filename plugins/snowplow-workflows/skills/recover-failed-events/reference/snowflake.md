@@ -42,8 +42,10 @@ layer behind the INSERT-generator template in `templates/snowflake.md`.
 Unlike BigQuery/Athena, Snowflake entity columns are semi-structured `ARRAY`/`VARIANT`, not native
 structs. So the reconstruction has **no field-order requirement and no reserved-word quoting** — the
 keys in `OBJECT_CONSTRUCT(...)` are plain string literals, and you cast each value with `::TYPE`
-(e.g. `::INTEGER`, `::STRING`, `::BOOLEAN`). There is **no** Hive→engine type conversion. The one
-mandatory key is `_schema_version`, first, for the Snowflake Streaming Loader.
+(e.g. `::INTEGER`, `::STRING`, `::BOOLEAN`). There is **no** Hive→engine type conversion. For a
+**contexts** recovery the one mandatory key is `_schema_version`, first, for the Snowflake Streaming
+Loader. An **unstruct** recovery usually has no `_schema_version` at all — confirm which against a
+validated good row (Phase 4) rather than carrying the contexts rule across.
 
 ## Column classification (what the generator does, per column)
 
@@ -93,7 +95,8 @@ Confirm all of these against the pasted test-SELECT output before generating the
    rather than silently returning null, so a successful run is strong evidence the types match (and
    Phase 3.5 already proved coercibility).
 2. **Field types** — each `TYPEOF()` on a reconstructed field returns the intended type
-   (e.g. `INTEGER`, `VARCHAR`, `BOOLEAN`), and `_schema_version` is present in the reconstructed object.
+   (e.g. `INTEGER`, `VARCHAR`, `BOOLEAN`). On a **contexts** recovery `_schema_version` is also present
+   in the reconstructed object; on an **unstruct** one, match whatever the validated good row showed.
 3. **Row count** equals the failed-event count for this schema + app_id (from the identification query).
 4. **No unexpected nulls** in `recovered` — a null usually means a wrong `:` path. Investigate.
 5. **Values are corrected** — the repaired field holds the fixed value, and pass-through fields are intact.
