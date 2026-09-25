@@ -103,9 +103,14 @@ Then run the **row-level drill-in** to form a fix hypothesis — including wheth
 conform). Read the `source` sub-field (contexts vs unstruct) from *inside* the `errors` element, using
 the pack's navigation — never the failure top level.
 
-Offer the **duplicate pre-check** (`templates/<warehouse>.md`). It lists any `event_id`s already in the
-good table — expect **none**. If any come back, decide with the user (stop, narrow scope, or proceed
-knowingly). If they skip it, note it and move on.
+Offer the **duplicate pre-check** (`templates/<warehouse>.md`) — **ask explicitly**, don't skip it
+silently:
+
+> "Want me to check whether these events have already been recovered before? You can skip this if you
+> know this schema has never been recovered."
+
+It lists any `event_id`s already in the good table — expect **none**. If any come back, decide with the
+user (stop, narrow scope, or proceed knowingly). If they skip it, note that they did and move on.
 
 Then, if the failing schema is a **custom schema** (your own vendor, not a Snowplow / Iglu Central one),
 get its Iglu JSON — **fetch before asking**. Try in order: the Console MCP if the official `snowplow`
@@ -202,6 +207,9 @@ Either way, review the generated INSERT with the user: the recovery column carri
 through. Column classification is by membership in the failed table — no hardcoded atomic-column list.
 
 ## Phase 8 — Run, validate, promote
+
+If the duplicate pre-check was skipped in Phase 2 and there's any doubt, **offer it once more** — this
+is the last gate before a write that can't be undone with a rollback.
 
 Run the INSERT. Re-run the validation checks against the landed rows (row count matches, values
 correct, siblings preserved). On the staging path, promote with `INSERT INTO <good> SELECT * FROM
