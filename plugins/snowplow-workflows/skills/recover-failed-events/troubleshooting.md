@@ -63,6 +63,19 @@ table), re-run the recovery INSERT into it, then promote.
 
 ## Athena
 
+### Test SELECT / INSERT errors: cast or coercion failure
+**Symptom:** the Phase 4 test SELECT (or the INSERT) fails with a cast error such as
+`Cannot cast 'abc' to bigint` on a recovered field.
+**Cause:** a value in the payload genuinely doesn't convert to the target type — the failed rows don't
+all share one recovery — or the expression was built before the Phase 3.5 profiling that would have
+caught it.
+**Verify:** run the **field profiling query** (`templates/athena.md`) for that field with its target
+type in the `TRY_CAST`; a non-zero `_uncoercible` count confirms un-castable values exist.
+**Fix:** if `_uncoercible > 0`, **partition the offending rows off** — list them, agree the scope with
+the user, recover only the coercible population. Do **not** switch the recovery expression to
+`TRY_CAST` to dodge the error: that hides un-castable values as silent NULLs and writes an incomplete
+recovery. `TRY_CAST` belongs in the profiling query only.
+
 ### A reserved word is used as a ROW field name
 **Symptom:** the `CAST(... AS ROW(...))` errors on a field named like a SQL keyword or a type (`date`,
 `value`, `float`, …).
@@ -115,6 +128,20 @@ so there's no string-literal layer to escape.
 or give the INSERT an explicit column list omitting the failure column.
 
 ## Snowflake
+
+### Test SELECT errors on a `::TYPE` cast
+**Symptom:** the Phase 4 test SELECT fails casting a `data:<field>` value to its target type — e.g.
+`Numeric value '...' is not recognized` on `::INTEGER`.
+**Cause:** some rows genuinely can't become the target type, so the failed rows do **not** all share
+one recovery. Snowflake errors on a bad `::TYPE` cast rather than continuing, which is the correct,
+loud behaviour — and the most common test-SELECT error here.
+**Verify:** run the **profiling query** (`templates/snowflake.md`) and read `_uncoercible` and
+`_variant_types` for that field. This is the Phase 3.5 gate that exists to catch it first.
+**Fix:** if `_uncoercible = 0` for every field, the cast will run clean (an int sent as `"5"` still
+coerces) — the error was on a field whose target type you had wrong, so correct it and re-run. If
+`_uncoercible > 0`, **partition those rows off** and recover them separately, or fix at source. Do
+**not** switch the recovery expression to `TRY_CAST` to dodge the error — Snowflake would then return
+silent NULLs for exactly the values that need attention, and write an incomplete recovery.
 
 ### The reconstructed entity is the wrong shape, or is missing `_schema_version`
 **Symptom:** validation shows the recovered VARIANT doesn't match a good row.
