@@ -30,7 +30,7 @@ pre-check) so the identified, validated, and recovered sets match.
 
 ## Identification query — summary (Phase 2, default)
 
-Lead with this: one row per schema × app_id × failure type with volumes and time span. Best for
+Lead with this: one row per schema × app_id × failure type × source, with volumes and time span. Best for
 surveying what's failing without dumping every row, especially over a wide window.
 
 **Flatten the failure array — one event can fail on several entities at once**, so the
@@ -44,6 +44,7 @@ SELECT
     f.value:schema::STRING       AS failing_schema,
     app_id,
     f.value:failure_type::STRING AS failure_type,
+    f.value:errors[0]:source::STRING AS source,
     COUNT(*)                     AS failed_events,
     MIN(f.value:timestamp::TIMESTAMP) AS first_seen,
     MAX(f.value:timestamp::TIMESTAMP) AS last_seen
@@ -53,13 +54,16 @@ WHERE load_tstamp::DATE > CURRENT_DATE - INTERVAL '<days> DAY'   -- or a bounded
 GROUP BY
     f.value:schema::STRING,
     app_id,
-    f.value:failure_type::STRING
+    f.value:failure_type::STRING,
+    f.value:errors[0]:source::STRING
 ORDER BY failed_events DESC;
 ```
 
-Each row is one failing (schema, app_id, failure_type) — an event that failed on two schemas appears
-under both, counted once in each, which is correct. **Recover one schema per run; re-run this
-identification after each** to see what remains.
+Each row is one failing (schema, app_id, failure_type, source) — an event that failed on two schemas
+appears under both, counted once in each, which is correct. `source` is the fourth key because a
+schema that failed **both** as a context entity and as the self-describing event needs one run per
+source: splitting it here makes each row's count the exact target for the Phase 5 row-count gate.
+**Recover one schema per run; re-run this identification after each** to see what remains.
 
 ## Identification query — row-level drill-in (after a schema is chosen)
 

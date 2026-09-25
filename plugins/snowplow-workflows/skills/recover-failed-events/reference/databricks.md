@@ -124,7 +124,8 @@ Confirm all of these against the pasted test-SELECT output before generating the
 3. **Struct shape matches the target** — the reconstructed struct's field names, types, and order
    match the recovery column's `full_data_type` exactly (Delta resolves struct fields by name for the
    INSERT), and `_schema_version` is present as the first field.
-4. **Row count** equals the failed-event count for this schema + app_id (from the identification query).
+4. **Row count** equals the failed-event count for this schema + app_id + source (from the
+   identification query).
 
 If any check fails, fix the recovery expression and re-run the test SELECT (return to Phase 4). Only
 generate the INSERT once the values are correct (no unexpected nulls), the shape matches, and the row

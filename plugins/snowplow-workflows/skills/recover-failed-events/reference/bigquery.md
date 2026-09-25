@@ -118,7 +118,8 @@ Confirm all of these against the pasted test-SELECT output before generating the
 2. **Struct shape matches the target** — the reconstructed struct's field names, types, and order
    match the recovery column's `data_type` exactly (this is what the positional INSERT requires), and
    `_schema_version` is present as the first field.
-3. **Row count** equals the failed-event count for this schema + app_id (from the identification query).
+3. **Row count** equals the failed-event count for this schema + app_id + source (from the
+   identification query).
 4. **No unexpected nulls** in `recovered` — a null usually means a wrong JSON path. Investigate.
 5. **Values are corrected** — the repaired field holds the fixed value, and pass-through fields are intact.
 

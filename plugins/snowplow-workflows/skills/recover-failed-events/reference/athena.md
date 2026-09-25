@@ -155,7 +155,7 @@ Confirm all of these against the pasted test-SELECT output before generating the
    type after Hive→Athena conversion — same field **names, types, and order**. Athena inserts
    positionally into a struct, so order matters. If `typeof` matches the target column type, the INSERT
    will type-check.
-2. **Row count** equals the failed-event count for this schema + app_id (from the identification
+2. **Row count** equals the failed-event count for this schema + app_id + source (from the identification
    query).
 3. **No unexpected nulls** in `recovered` — a null usually means a wrong `$.json_path` or a cast that
    silently returned null. Investigate before proceeding.

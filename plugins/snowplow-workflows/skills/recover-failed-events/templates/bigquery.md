@@ -29,7 +29,7 @@ pre-check) so the identified, validated, and recovered sets match.
 
 ## Identification query — summary (Phase 2, default)
 
-Lead with this: one row per schema × app_id × failure type with volumes and time span. Best for
+Lead with this: one row per schema × app_id × failure type × source, with volumes and time span. Best for
 surveying what's failing without dumping every row, especially over a wide window.
 
 **Flatten the failure array — one event can fail on several entities at once**, so the
@@ -43,19 +43,22 @@ SELECT
     f.schema       AS failing_schema,
     app_id,
     f.failure_type AS failure_type,
+    JSON_VALUE(f.errors[SAFE_OFFSET(0)].source) AS source,
     COUNT(*)       AS failed_events,
     MIN(f.timestamp) AS first_seen,
     MAX(f.timestamp) AS last_seen
 FROM `<failed_project>.<failed_dataset>.<failed_table>`,
      UNNEST(contexts_com_snowplowanalytics_snowplow_failure_1) AS f
 WHERE DATE(load_tstamp) > DATE_SUB(CURRENT_DATE(), INTERVAL <days> DAY)  -- or a bounded range (see Time window)
-GROUP BY 1, 2, 3
+GROUP BY 1, 2, 3, 4
 ORDER BY failed_events DESC;
 ```
 
-Each row is one failing (schema, app_id, failure_type) — an event that failed on two schemas appears
-under both, counted once in each, which is correct. **Recover one schema per run; re-run this
-identification after each** to see what remains.
+Each row is one failing (schema, app_id, failure_type, source) — an event that failed on two schemas
+appears under both, counted once in each, which is correct. `source` is the fourth key because a
+schema that failed **both** as a context entity and as the self-describing event needs one run per
+source: splitting it here makes each row's count the exact target for the Phase 5 row-count gate.
+**Recover one schema per run; re-run this identification after each** to see what remains.
 
 ## Identification query — row-level drill-in (after a schema is chosen)
 

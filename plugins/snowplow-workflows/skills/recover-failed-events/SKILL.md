@@ -89,9 +89,10 @@ from the template).
 
 ## Phase 2 — Identify the failures
 
-Lead with the **summary identification query** (`templates/<warehouse>.md`): one row per schema × app_id
-× failure type, with volumes. Read off which schemas fail, at what rate, which `failure_type`, which
-app_ids. Have the user pick **one** schema.
+Lead with the **summary identification query** (`templates/<warehouse>.md`): one row per schema ×
+app_id × failure type × source, with volumes. Read off which schemas fail, at what rate, which
+`failure_type`, which app_ids, and whether a schema failed as `contexts`, as `unstruct`, or both.
+Have the user pick **one** schema — and if it shows up under both sources, one source too.
 
 **One event can fail on several entities at once**, so the failure column is an array with one
 element per failed entity. The identification query **flattens** it (the pack's *Failure-array
@@ -179,8 +180,9 @@ column is right *before* any INSERT. If it's wrong, fix the expression and re-ru
 ## Phase 5 — Validate the gate
 
 Confirm, on the test SELECT output: the reconstructed column's type/shape matches the target
-field-for-field; the row count equals the failed-event count for this schema + app_id; there are no
-unexpected NULLs (the pack flags the warehouse where a NULL is a silent bad-cast, not an error); and the
+field-for-field; the row count equals the failed-event count for this schema + app_id + source; there
+are no unexpected NULLs (the pack flags the warehouse where a NULL is a silent bad-cast, not an error);
+and the
 repaired values are actually corrected. Only pass the gate when all four hold.
 
 ## Phase 6 — Choose the write path

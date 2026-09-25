@@ -99,7 +99,8 @@ Confirm all of these against the pasted test-SELECT output before generating the
 2. **Field types** — each `TYPEOF()` on a reconstructed field returns the intended type
    (e.g. `INTEGER`, `VARCHAR`, `BOOLEAN`). On a **contexts** recovery `_schema_version` is also present
    in the reconstructed object; on an **unstruct** one, match whatever the validated good row showed.
-3. **Row count** equals the failed-event count for this schema + app_id (from the identification query).
+3. **Row count** equals the failed-event count for this schema + app_id + source (from the
+   identification query).
 4. **No unexpected nulls** in `recovered` — a null usually means a wrong `:` path. Investigate.
 5. **Values are corrected** — the repaired field holds the fixed value, and pass-through fields are intact.
 

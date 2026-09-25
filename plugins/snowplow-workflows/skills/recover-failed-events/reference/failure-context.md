@@ -150,6 +150,6 @@ trap).
 
 On the test SELECT output, confirm: the reconstructed column's type/shape matches the target
 field-for-field (order matters on the strict warehouses); the row count equals the failed-event count
-for this schema + app_id; no unexpected NULLs (on Databricks a NULL is a silent bad-cast, not an
+for this schema + app_id + source; no unexpected NULLs (on Databricks a NULL is a silent bad-cast, not an
 error — the decisive check there); and the repaired values are actually corrected. Pass the gate only
 when all four hold.
