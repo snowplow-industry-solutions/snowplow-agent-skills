@@ -23,6 +23,8 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | INSERT-build mechanism | in-warehouse generator (`\|\|` concat + `LISTAGG(...) WITHIN GROUP`) |
 | Recovery-expr escaping (generator string) | double single quotes (`''`) |
 | Good-entity array index | `[0]` |
+| Good-entity array size | `ARRAY_SIZE(<recovery_column>)` |
+| Recorded schema URI | `f.value:schema::STRING` (the URI **as recorded** — the ResolutionError filter) |
 
 **Snowflake is schemaless.** Entity columns are VARIANT, so there is **no** strict struct-type contract:
 no field-order requirement, no reserved-word quoting, no Hive→type conversion. The keys in

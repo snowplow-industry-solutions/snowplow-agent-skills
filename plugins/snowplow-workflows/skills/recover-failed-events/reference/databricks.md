@@ -23,6 +23,8 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | INSERT-build mechanism | local `scripts/generate_insert_databricks.py` (primary); in-warehouse `concat` generator (fallback) |
 | Recovery-expr escaping (in-warehouse fallback only) | backslash `\'` — Spark has **no** `''` escape; the script path leaves quotes unchanged |
 | Good-entity array index | `[0]` |
+| Good-entity array size | `size(<recovery_column>)` |
+| Recorded schema URI | `f.schema` (the URI **as recorded** — the ResolutionError filter) |
 
 **Databricks silent-NULL trap:** `GET_JSON_OBJECT` returns NULL on a bad path and `CAST` returns NULL on
 an un-castable value in legacy mode (only ANSI mode errors), so a test SELECT that runs is **not** proof

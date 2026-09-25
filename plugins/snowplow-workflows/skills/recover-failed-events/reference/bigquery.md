@@ -23,6 +23,8 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | INSERT-build mechanism | in-warehouse generator (`FORMAT("""…""")` + `STRING_AGG`) |
 | Recovery-expr embedding | triple-quoted `'''…'''` (no escaping; survives a wrapped paste) |
 | Good-entity array index | `[SAFE_OFFSET(0)]` |
+| Good-entity array size | `ARRAY_LENGTH(<recovery_column>)` |
+| Recorded schema URI | `f.schema` (the URI **as recorded** — the ResolutionError filter) |
 
 BigQuery is the only warehouse with **strict typed JSON accessors**, so extraction is a per-field
 choice: the strict accessor where the value is already the native JSON type, `CAST(JSON_VALUE(...) AS

@@ -201,7 +201,7 @@ read across the write.
 A `ResolutionError` means Iglu couldn't resolve the schema — not that the data is bad. It's recoverable
 in-warehouse when (a) the schema now resolves (transient registry, corrected URI, or a now-published
 schema) and (b) a target column exists in the good table. Filter failed rows on the URI **as recorded
-in the failure context** (the original, possibly-wrong one — see the pack's recorded-URI path), but
+in the failure context** (the original, possibly-wrong one — the pack's **Recorded schema URI**), but
 derive the target column and `_schema_version` from the **corrected** URI. Bail out only if the schema
 can't be made to resolve or no target column can exist. Enrichment and adapter failures stay out of
 scope.
@@ -246,8 +246,8 @@ differences from the contexts path:
 2. reconstruct with the pack's bare struct primitive (no array wrapper);
 3. it usually has **no `_schema_version`** field — but confirm that against the column type and a
    validated good row rather than assuming it; match what you observe;
-4. drop the array accessor and size function from inspection/validation queries (the pack names them) —
-   read the column directly and filter `IS NOT NULL`.
+4. drop the pack's **Good-entity array index** and **Good-entity array size** from the inspection and
+   validation queries — read the column directly and filter `IS NOT NULL`.
 
 A failed unstruct event that also carried a valid context entity keeps that entity in its own column;
 the pass-through preserves it. Do not null sibling entity columns.

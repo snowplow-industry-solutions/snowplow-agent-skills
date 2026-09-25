@@ -71,6 +71,8 @@ expands on the typing rules; the SQL is in `templates/<warehouse>.md`.
 | `source` path | `json_extract_scalar(errors[1],'$.source')` | `errors[0]:source::STRING` | `JSON_VALUE(errors[SAFE_OFFSET(0)].source)` | `GET_JSON_OBJECT(errors[0],'$.source')` |
 | Expand the failure array | `CROSS JOIN UNNEST(...) AS t(f)` | `LATERAL FLATTEN(input => ...) f` | `, UNNEST(...) AS f` | `LATERAL VIEW explode(...) t AS f` |
 | Good-entity array index | `[1]` (1-based) | `[0]` | `[SAFE_OFFSET(0)]` | `[0]` |
+| Good-entity array size | `cardinality(<col>)` | `ARRAY_SIZE(<col>)` | `ARRAY_LENGTH(<col>)` | `size(<col>)` |
+| Recorded schema URI | `failure_ctx.schema` | `f.value:schema::STRING` | `f.schema` | `f.schema` |
 | Grounding source (recovery-column type) | good-table `DESCRIBE` | a **validated good row** (VARIANT, no DDL) | `INFORMATION_SCHEMA` `data_type` | `information_schema` `full_data_type` |
 
 Two genuine outliers, not just syntax:

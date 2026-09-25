@@ -23,6 +23,8 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | INSERT-build mechanism | local `scripts/generate_insert_athena.py` |
 | Recovery-expr escaping (inline INSERT) | none — the expression is inserted verbatim; only `app_id` and the schema URI are `''`-escaped |
 | Good-entity array index | `[1]` (1-based) |
+| Good-entity array size | `cardinality(<recovery_column>)` |
+| Recorded schema URI | `failure_ctx.schema` (the URI **as recorded** — the ResolutionError filter) |
 
 Athena is the strictest on typing: native `ARRAY(ROW(...))` entity columns, positional struct inserts,
 **and** it needs Hive→Trino type conversion plus reserved-word quoting (below) that the other
