@@ -14,7 +14,7 @@ Non-interactive. Reads its inputs from files and prints the INSERT to stdout
 (or writes it with --out). Standard library only — runs on any local Python 3.6+.
 
 Usage:
-    python3 generate_insert.py \
+    python3 generate_insert_databricks.py \
         --config config.json \
         --good-columns good_columns.txt \
         --failed-columns failed_columns.txt \

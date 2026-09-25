@@ -6,7 +6,7 @@ Non-interactive. Reads its inputs from files and prints the INSERT to stdout
 (or writes it with --out). Standard library only — runs on any local Python 3.6+.
 
 Usage:
-    python3 generate_insert.py \
+    python3 generate_insert_athena.py \
         --config config.json \
         --good-describe good_describe.txt \
         --failed-describe failed_describe.txt \
