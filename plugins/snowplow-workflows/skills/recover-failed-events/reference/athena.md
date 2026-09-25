@@ -21,7 +21,7 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | Time travel | `FOR TIMESTAMP AS OF` (engine v3) |
 | Lookback date-math | `load_tstamp > current_timestamp - interval '<days>' day` |
 | INSERT-build mechanism | local `scripts/generate_insert_athena.py` |
-| Recovery-expr escaping (inline INSERT) | double single quotes (`''`) |
+| Recovery-expr escaping (inline INSERT) | none — the expression is inserted verbatim; only `app_id` and the schema URI are `''`-escaped |
 | Good-entity array index | `[1]` (1-based) |
 
 Athena is the strictest on typing: native `ARRAY(ROW(...))` entity columns, positional struct inserts,
