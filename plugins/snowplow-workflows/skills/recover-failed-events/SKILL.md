@@ -43,7 +43,10 @@ self-describing event is two separate runs into two different columns.
 - **`troubleshooting.md`** — shared failure modes plus a per-warehouse section.
 - **`scripts/generate_insert_athena.py`** / **`scripts/generate_insert_databricks.py`** — the local
   INSERT generators (Athena and Databricks only; BigQuery and Snowflake build the INSERT in-warehouse).
-- Customer-facing overview: the Snowplow help-centre article on warehouse recovery with Claude.
+- **Plain-language overview (help centre):** a customer-facing summary of what this skill does — the
+  process, the safety gates, what it can and can't recover — is published at
+  https://support.snowplow.io/articles/5225708172-Recovering-failed-events-in-the-warehouse-with-Claude.
+  Share that link if the user asks "what does this do?".
 
 ## Phase 1 — Pick the warehouse, then gather tables
 
