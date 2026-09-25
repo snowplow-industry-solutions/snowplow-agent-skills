@@ -67,6 +67,7 @@ expands on the typing rules; the SQL is in `templates/<warehouse>.md`.
 |---|---|---|---|---|
 | Failure `data` type | JSON string | VARIANT | `JSON` | JSON string |
 | Read a `data` scalar | `json_extract_scalar(data,'$.f')` | `data:f::TYPE` | `JSON_VALUE(data.f)` / strict `INT64()` | `GET_JSON_OBJECT(data,'$.f')` |
+| Read a nested `data` object/array | `json_extract(data,'$.o')`, then `CAST(json_parse(…) AS ROW(…)/ARRAY(ROW(…)))` | `data:o` (already VARIANT — no extractor) | `JSON_QUERY(data.o)` / `JSON_QUERY_ARRAY(data.a)` | `FROM_JSON(GET_JSON_OBJECT(data,'$.o'),'<schema>')` |
 | `errors` element | `array(varchar)` JSON strings | array of VARIANT objects | `ARRAY<JSON>` | `ARRAY<STRING>` JSON strings |
 | `source` path | `json_extract_scalar(errors[1],'$.source')` | `errors[0]:source::STRING` | `JSON_VALUE(errors[SAFE_OFFSET(0)].source)` | `GET_JSON_OBJECT(errors[0],'$.source')` |
 | Failure-array expand | `CROSS JOIN UNNEST(...) AS t(f)` | `LATERAL FLATTEN(input => ...) f` | `, UNNEST(...) AS f` | `LATERAL VIEW explode(...) t AS f` |
@@ -74,6 +75,12 @@ expands on the typing rules; the SQL is in `templates/<warehouse>.md`.
 | Good-entity array size | `cardinality(<col>)` | `ARRAY_SIZE(<col>)` | `ARRAY_LENGTH(<col>)` | `size(<col>)` |
 | Recorded schema URI | `failure_ctx.schema` | `f.value:schema::STRING` | `f.schema` | `f.schema` |
 | Grounding source (recovery-column type) | good-table `DESCRIBE` | a **validated good row** (VARIANT, no DDL) | `INFORMATION_SCHEMA` `data_type` | `information_schema` `full_data_type` |
+
+**A nested field is not a scalar.** The scalar extractors return the JSON *substring* for an
+object or array field, not a typed value, so casting that substring straight to the target type is
+wrong. On Databricks it is wrong silently: `CAST(GET_JSON_OBJECT(…) AS ARRAY<STRUCT<…>>)` returns NULL
+rather than erroring, and a nested field rebuilt that way passes the Phase 5 gate as NULL on every row.
+Use the parse-then-cast form in the row above, and profile the field in Phase 3.5 like any other.
 
 Two genuine outliers, not just syntax:
 
