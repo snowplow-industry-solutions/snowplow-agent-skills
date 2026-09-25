@@ -188,9 +188,9 @@ silent NULLs for exactly the values that need attention, and write an incomplete
 **Verify:** run the *inspect a validated event* query (`templates/snowflake.md`) and compare the good
 row's object against yours key by key — wrapper first (array vs bare object), then whether
 `_schema_version` is present.
-**Fix:** a `contexts_*` recovery is `ARRAY_CONSTRUCT(OBJECT_CONSTRUCT(...))` with `_schema_version` first;
-an `unstruct_event_*` recovery is a single `OBJECT_CONSTRUCT(...)` with **no** `_schema_version`. Match a
-validated good row.
+**Fix:** a `contexts_*` recovery is `ARRAY_CONSTRUCT(OBJECT_CONSTRUCT(...))` with `_schema_version`
+first. An `unstruct_event_*` recovery is a single `OBJECT_CONSTRUCT(...)`, usually with no
+`_schema_version` — but match whatever the validated good row showed rather than assuming either way.
 
 ### `TYPEOF` errors with "Invalid argument types for function 'TYPEOF'"
 **Symptom:** the test SELECT's `TYPEOF(...::TYPE)` errors.
