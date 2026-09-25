@@ -53,8 +53,11 @@ Its `warehouse` key tells you which dialect pack to load: `athena`, `bigquery`, 
 run `setup-snowplow-context` so this and every later skill stops asking.
 
 **Load `reference/<warehouse>.md` now.** Everything below refers to the pack's *token table* for the
-dialect (array index, scalar extractor, cast syntax, reconstruction primitive, staging, time travel,
-INSERT-build mechanism) and to `templates/<warehouse>.md` for the SQL.
+dialect. Rows are referred to **by their exact names** — *Failure-array expand*, *Read a `data`
+scalar*, *Cast*, *contexts reconstruction* / *unstruct reconstruction*, *Profiling probe
+(non-erroring)*, *Validation signal*, *Grounding source*, *Staging create*, *Time travel*,
+*Good-entity array index* / *array size*, *Recorded schema URI*, *Recovery-expr embedding*,
+*INSERT-build mechanism* — and to `templates/<warehouse>.md` for the SQL.
 
 Then ask for both tables and the failure window in the opening message, so no placeholders linger:
 
@@ -79,12 +82,13 @@ Lead with the **summary identification query** (`templates/<warehouse>.md`): one
 × failure type, with volumes. Read off which schemas fail, at what rate, which `failure_type`, which
 app_ids. Have the user pick **one** schema.
 
-**One event can fail on several entities at once**, so the failure column is an array with one element
-per failed entity. The identification query **flattens** it (the pack's expand construct) so a schema is
-surfaced wherever it sits in the array — reading only the first element would hide, and silently drop
-from the counts, every schema that isn't an event's first failure. Recover **one schema per run** and
-re-run identification after each to see what remains. The whole recovery path matches the target schema
-on the flattened element, so an event whose target failure isn't first is still recovered.
+**One event can fail on several entities at once**, so the failure column is an array with one
+element per failed entity. The identification query **flattens** it (the pack's *Failure-array
+expand*) so a schema is surfaced wherever it sits in the array — reading only the first element
+would hide, and silently drop from the counts, every schema that isn't an event's first failure.
+Recover **one schema per run** and re-run identification after each to see what remains. The whole
+recovery path matches the target schema on the flattened element, so an event whose target failure
+isn't first is still recovered.
 
 Then run the **row-level drill-in** to form a fix hypothesis — including whether this is a
 `ResolutionError` (Iglu couldn't resolve the schema) rather than a `ValidationError` (data didn't
@@ -108,8 +112,8 @@ substitute for the grounding in rule 2.
 ## Phase 3 — Inspect the payload
 
 Run the **payload inspection query** to see how each field's value is actually encoded (a number sent
-as a JSON string, a missing field, an extra one), not just its content. Use the pack's flatten
-construct and scalar extractor. This is where you confirm the fix hypothesis against real values and
+as a JSON string, a missing field, an extra one), not just its content. Use the pack's *Failure-array
+expand* and *Read a `data` scalar*. This is where you confirm the fix hypothesis against real values and
 spot compound failures (a renamed field *and* a wrong type together).
 
 If the failure is **`additionalProperties`** — the payload carries a field the schema doesn't define —
@@ -119,8 +123,8 @@ decides which fields Phase 3.5 profiles. See *Recovering an `additionalPropertie
 ## Phase 3.5 — Profile and confirm coercibility
 
 Before building anything, run the **profiling gate**: a query that *cannot error* (it uses the pack's
-non-erroring probes) reporting, per field across all rows, whether values are absent, and whether they
-coerce to the target type. Decide per field, in order:
+*Profiling probe (non-erroring)*) reporting, per field across all rows, whether values are absent,
+and whether they coerce to the target type. Decide per field, in order:
 
 - any value **un-coercible** → **stop and partition** — the failed population isn't homogeneous, so one
   recovery expression won't fit all rows;
@@ -145,7 +149,7 @@ window. If the good table genuinely holds no validated events for this entity, d
 validated events in the good table* in `reference/failure-context.md`. Tell the user to land one valid
 event so the loader creates and populates the column, then re-run.
 
-Then build the reconstruction with the pack's **reconstruction primitive**:
+Then build the reconstruction with the pack's **contexts reconstruction** / **unstruct reconstruction**:
 
 - **context entity** → an array of one struct, `_schema_version` first, matching the column's type
   field-for-field (name, type, order — strict warehouses insert positionally);
@@ -193,7 +197,7 @@ through. Column classification is by membership in the failed table — no hardc
 
 Run the INSERT. Re-run the validation checks against the landed rows (row count matches, values
 correct, siblings preserved). On the staging path, promote with `INSERT INTO <good> SELECT * FROM
-<staging>` and drop the staging table. Use the pack's time-travel syntax if you need a consistent
+<staging>` and drop the staging table. Use the pack's *Time travel* syntax if you need a consistent
 read across the write.
 
 ## Recovering a ResolutionError
@@ -243,7 +247,7 @@ The self-describing event lands in a single `unstruct_event_*` column, not a `co
 differences from the contexts path:
 
 1. the target is a **single struct**, not an array of structs;
-2. reconstruct with the pack's bare struct primitive (no array wrapper);
+2. reconstruct with the pack's *unstruct reconstruction* (no array wrapper);
 3. it usually has **no `_schema_version`** field — but confirm that against the column type and a
    validated good row rather than assuming it; match what you observe;
 4. drop the pack's **Good-entity array index** and **Good-entity array size** from the inspection and

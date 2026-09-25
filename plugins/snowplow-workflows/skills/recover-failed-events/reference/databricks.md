@@ -21,7 +21,7 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | Time travel | `TIMESTAMP AS OF` / `VERSION AS OF` |
 | Lookback date-math | `DATE(load_tstamp) > DATE_SUB(CURRENT_DATE(), <days>)` (bare integer, no `INTERVAL`) |
 | INSERT-build mechanism | local `scripts/generate_insert_databricks.py` (primary); in-warehouse `concat` generator (fallback) |
-| Recovery-expr escaping (in-warehouse fallback only) | backslash `\'` — Spark has **no** `''` escape; the script path leaves quotes unchanged |
+| Recovery-expr embedding | in-warehouse fallback only: backslash `\'` — Spark has **no** `''` escape; the script path leaves quotes unchanged |
 | Good-entity array index | `[0]` |
 | Good-entity array size | `size(<recovery_column>)` |
 | Recorded schema URI | `f.schema` (the URI **as recorded** — the ResolutionError filter) |

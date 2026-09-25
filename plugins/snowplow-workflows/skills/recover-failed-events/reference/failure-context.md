@@ -28,7 +28,7 @@ than one element. Reading only the first element (`[0]` / `[1]` / `[SAFE_OFFSET(
 schema that isn't an event's *first* failure — it would never appear in the identification counts and
 never match a recovery predicate, so those events would go unrecovered silently.
 
-Every query therefore **flattens** the failure array (the dialect's expand construct — see the table)
+Every query therefore **flattens** the failure array (the dialect's *Failure-array expand* — see below)
 and matches the target schema on the flattened element, wherever it sits. The flatten yields one row
 per event **per source**: a schema that failed both as a context entity and as the self-describing
 event carries the same URI on two entries, so matching on schema alone fans that event out to two rows
@@ -69,7 +69,7 @@ expands on the typing rules; the SQL is in `templates/<warehouse>.md`.
 | Read a `data` scalar | `json_extract_scalar(data,'$.f')` | `data:f::TYPE` | `JSON_VALUE(data.f)` / strict `INT64()` | `GET_JSON_OBJECT(data,'$.f')` |
 | `errors` element | `array(varchar)` JSON strings | array of VARIANT objects | `ARRAY<JSON>` | `ARRAY<STRING>` JSON strings |
 | `source` path | `json_extract_scalar(errors[1],'$.source')` | `errors[0]:source::STRING` | `JSON_VALUE(errors[SAFE_OFFSET(0)].source)` | `GET_JSON_OBJECT(errors[0],'$.source')` |
-| Expand the failure array | `CROSS JOIN UNNEST(...) AS t(f)` | `LATERAL FLATTEN(input => ...) f` | `, UNNEST(...) AS f` | `LATERAL VIEW explode(...) t AS f` |
+| Failure-array expand | `CROSS JOIN UNNEST(...) AS t(f)` | `LATERAL FLATTEN(input => ...) f` | `, UNNEST(...) AS f` | `LATERAL VIEW explode(...) t AS f` |
 | Good-entity array index | `[1]` (1-based) | `[0]` | `[SAFE_OFFSET(0)]` | `[0]` |
 | Good-entity array size | `cardinality(<col>)` | `ARRAY_SIZE(<col>)` | `ARRAY_LENGTH(<col>)` | `size(<col>)` |
 | Recorded schema URI | `failure_ctx.schema` | `f.value:schema::STRING` | `f.schema` | `f.schema` |
@@ -131,12 +131,13 @@ For every column in the **good** events table, the generated INSERT decides one 
 
 ## Profiling gate (Phase 3.5)
 
-Before building any recovery expression, profile **every field you'll recover** across **all** failed
-rows with a query that *cannot error* (the pack's non-erroring probes). Decide per field, in order: any
-value **un-coercible** to the target type → stop and partition (the population isn't homogeneous, so one
-expression won't fit); any value **absent** → required field partitions, optional field can be NULL;
-else uniform and coercible → build it. This confirms one expression covers the whole set before you
-write it (and, on Databricks, pre-empts the silent-NULL trap).
+Before building any recovery expression, profile **every field you'll recover** across **all**
+failed rows with a query that *cannot error* (the pack's *Profiling probe (non-erroring)*). Decide
+per field, in order: any value **un-coercible** to the target type → stop and partition (the
+population isn't homogeneous, so one expression won't fit); any value **absent** → required field
+partitions, optional field can be NULL; else uniform and coercible → build it. This confirms one
+expression covers the whole set before you write it (and, on Databricks, pre-empts the silent-NULL
+trap).
 
 ## Validation gate (Phase 5)
 

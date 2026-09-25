@@ -21,7 +21,7 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | Time travel | `AT (TIMESTAMP => ...)` |
 | Lookback date-math | `load_tstamp::DATE > CURRENT_DATE - INTERVAL '<days> DAY'` |
 | INSERT-build mechanism | in-warehouse generator (`\|\|` concat + `LISTAGG(...) WITHIN GROUP`) |
-| Recovery-expr escaping (generator string) | double single quotes (`''`) |
+| Recovery-expr embedding | inside the in-warehouse generator string: double single quotes (`''`) |
 | Good-entity array index | `[0]` |
 | Good-entity array size | `ARRAY_SIZE(<recovery_column>)` |
 | Recorded schema URI | `f.value:schema::STRING` (the URI **as recorded** — the ResolutionError filter) |
