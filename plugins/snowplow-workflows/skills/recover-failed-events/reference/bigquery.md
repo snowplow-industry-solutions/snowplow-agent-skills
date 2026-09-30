@@ -14,7 +14,7 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | Read a `data` scalar | `JSON_VALUE(f.data.field)`; strict `INT64()`/`STRING()`/`FLOAT64()`/`BOOL()` where native |
 | Cast | strict accessor **or** `CAST(JSON_VALUE(...) AS <T>)`; `SAFE_CAST` in profiling |
 | contexts reconstruction | `[STRUCT(... AS field)]`, `_schema_version` first |
-| unstruct reconstruction | `STRUCT(...)`, no array, no `_schema_version` |
+| unstruct reconstruction | `STRUCT(...)`, no array, usually no `_schema_version` (confirm on a good row) |
 | Profiling probe (non-erroring) | `JSON_TYPE` + `JSON_VALUE` + `SAFE_CAST` + `COUNTIF` (with a `_json_null` counter) |
 | Validation signal | no `TYPEOF`; compare struct shape vs `data_type` — a clean run proves the casts held |
 | Staging create | `CREATE TABLE ... LIKE` |
@@ -116,8 +116,9 @@ Confirm all of these against the pasted test-SELECT output before generating the
    may be NULL where the value was absent or explicitly JSON `null` (profiling's `_absent` / `_json_null`
    counts told you which).
 2. **Struct shape matches the target** — the reconstructed struct's field names, types, and order
-   match the recovery column's `data_type` exactly (this is what the positional INSERT requires), and
-   `_schema_version` is present as the first field.
+   match the recovery column's `data_type` exactly (this is what the positional INSERT requires). On a
+   **contexts** recovery `_schema_version` is also present as the first field; on an **unstruct** one,
+   match whatever the validated good row showed.
 3. **Row count** equals the failed-event count for this schema + app_id + source (from the
    identification query).
 4. **No unexpected nulls** in `recovered` — a null usually means a wrong JSON path. Investigate.

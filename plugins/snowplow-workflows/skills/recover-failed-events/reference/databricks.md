@@ -14,7 +14,7 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | Read a `data` scalar | `GET_JSON_OBJECT(f.data, '$.field')` |
 | Cast | `CAST(... AS <type>)`; `try_cast` in profiling |
 | contexts reconstruction | `ARRAY(NAMED_STRUCT('_schema_version','1-0-0', 'f', CAST(...)))` |
-| unstruct reconstruction | `NAMED_STRUCT(...)`, no array, no `_schema_version` |
+| unstruct reconstruction | `NAMED_STRUCT(...)`, no array, usually no `_schema_version` (confirm on a good row) |
 | Profiling probe (non-erroring) | `get_json_object` + `try_cast` + `count_if` |
 | Validation signal | **no-unexpected-NULLs** (per-field null-count) — a clean run is *not* proof |
 | Staging create | CTAS `SELECT * ... LIMIT 0` (or `LIKE`) |
@@ -123,7 +123,8 @@ Confirm all of these against the pasted test-SELECT output before generating the
    a proper integer, not NULL), and pass-through fields are intact.
 3. **Struct shape matches the target** — the reconstructed struct's field names, types, and order
    match the recovery column's `full_data_type` exactly (Delta resolves struct fields by name for the
-   INSERT), and `_schema_version` is present as the first field.
+   INSERT). On a **contexts** recovery `_schema_version` is also present as the first field; on an
+   **unstruct** one, match whatever the validated good row showed.
 4. **Row count** equals the failed-event count for this schema + app_id + source (from the
    identification query).
 

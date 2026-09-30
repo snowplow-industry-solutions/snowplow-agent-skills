@@ -14,7 +14,7 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | Read a `data` scalar | `json_extract_scalar(failure_ctx.data, '$.f')` |
 | Cast | `CAST(... AS <type>)`; `TRY_CAST` in profiling |
 | contexts reconstruction | `CAST(ARRAY[ROW(...)] AS ARRAY(ROW(...)))`, `_schema_version` first |
-| unstruct reconstruction | `CAST(ROW(...) AS ROW(...))`, no array, no `_schema_version` |
+| unstruct reconstruction | `CAST(ROW(...) AS ROW(...))`, no array, usually no `_schema_version` (confirm on a good row) |
 | Profiling probe (non-erroring) | `json_extract_scalar` + `TRY_CAST` + `count_if` |
 | Validation signal | `typeof()` matches the target type field-for-field |
 | Staging create | CTAS `WITH(table_type='ICEBERG', location=…)` + `WHERE 1=0` (needs an S3 path) |

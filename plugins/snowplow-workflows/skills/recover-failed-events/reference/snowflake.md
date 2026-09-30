@@ -14,7 +14,7 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | Read a `data` scalar | `f.value:data:field::TYPE` (the payload is under `data` — `f.value:field` is NULL) |
 | Cast | `::TYPE`; `TRY_CAST` in profiling |
 | contexts reconstruction | `ARRAY_CONSTRUCT(OBJECT_CONSTRUCT(...))`, `_schema_version` first |
-| unstruct reconstruction | `OBJECT_CONSTRUCT(...)`, no array, no `_schema_version` |
+| unstruct reconstruction | `OBJECT_CONSTRUCT(...)`, no array, usually no `_schema_version` (confirm on a good row) |
 | Profiling probe (non-erroring) | `LISTAGG(DISTINCT TYPEOF(...))` + `TRY_CAST` + `COUNT_IF` |
 | Validation signal | `TYPEOF()` on the built VARIANT (build `recovered` in a CTE first — `TYPEOF` needs a VARIANT, not a `::TYPE` scalar) |
 | Staging create | `CREATE TABLE ... LIKE` |
