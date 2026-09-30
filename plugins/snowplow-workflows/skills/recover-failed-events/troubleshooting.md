@@ -62,10 +62,12 @@ Bail only if the schema can't be made to resolve or no target column can exist.
 **Symptom:** the pre-check lists `event_id`s already in the good table.
 **Cause:** these events were recovered before; re-running would duplicate them.
 **Verify:** re-run the pre-check with the exact window the recovery will use. It filters only on that
-window, `app_id` and the failing schema — it has no source predicate — so compare its row count against
-the identification count for the same schema + app_id, summed across sources. Equal means the whole set
-was recovered before; fewer means a partial earlier run (on a mixed-source schema, possibly one source's
-run) you'll have to exclude.
+window, `app_id` and the failing schema — it has no source predicate — and lists each `event_id` once.
+For a single-source schema, compare its row count against the identification count for the same
+schema + app_id: equal means the whole set was recovered before; fewer means a partial earlier run
+you'll have to exclude. For a schema that failed both ways, counts don't line up — one event can be
+counted under both sources in the identification query but appears here once — so match the returned
+`event_id`s against each source's drill-in to see which source's run already happened.
 **Fix:** decide with the user — stop, narrow the window/scope to exclude the already-recovered rows, or
 proceed knowingly (rare). Do not blindly re-run.
 
