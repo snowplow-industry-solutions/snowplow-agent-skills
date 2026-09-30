@@ -97,11 +97,11 @@ Mechanical steps: `array<`→`array(`, `struct<`→`row(`, `map<`→`map(`, ever
 field name and drop its colon (`name:`→`"name" `), then `string`→`varchar`, `int`→`integer`,
 `float`→`real` and `binary`→`varbinary` on the *type* tokens only. `float` and `binary` are DDL-only
 keywords: the query engine wants `real` and `varbinary`, so a `CAST(NULL AS float)` left untranslated
-fails to parse (#51). Snowplow columns are `double`/`string`, so this bites rarely — but `double` is
-already valid in both and must be left alone. Quoting every field name unconditionally is always safe in a Trino row type and
-protects a field named after a reserved word or a type keyword (`date`, `float`, `int`, `map`, …); the
-keyword substitutions skip anything already inside quotes, so a field literally named `int` or `string`
-is left intact.
+fails to parse and the whole generated INSERT is rejected. Snowplow columns are `double`/`string`, so
+this bites rarely — but `double` is already valid in both and must be left alone. Quoting every field
+name unconditionally is always safe in a Trino row type and protects a field named after a reserved
+word or a type keyword (`date`, `float`, `int`, `map`, …); the keyword substitutions skip anything
+already inside quotes, so a field literally named `int` or `string` is left intact.
 
 ### Reserved words inside ROW(...) definitions
 
