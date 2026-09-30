@@ -67,7 +67,7 @@ expands on the typing rules; the SQL is in `templates/<warehouse>.md`.
 |---|---|---|---|---|
 | Failure `data` type | JSON string | VARIANT | `JSON` | JSON string |
 | Read a `data` scalar | `json_extract_scalar(data,'$.f')` | `data:f::TYPE` | `JSON_VALUE(data.f)` / strict `INT64()` | `GET_JSON_OBJECT(data,'$.f')` |
-| Read a nested `data` object/array | `json_extract(data,'$.o')`, then `CAST(json_parse(…) AS ROW(…)/ARRAY(ROW(…)))` | `data:o` (already VARIANT — no extractor) | `JSON_QUERY(data.o)` / `JSON_QUERY_ARRAY(data.a)` | `FROM_JSON(GET_JSON_OBJECT(data,'$.o'),'<schema>')` |
+| Read a nested `data` object/array | `CAST(json_extract(data,'$.o') AS ROW(…))` / `AS ARRAY(ROW(…))` (`json_extract` already returns JSON — no `json_parse`) | `data:o` (already VARIANT — no extractor) | no JSON→STRUCT cast; rebuild per field: `STRUCT(JSON_VALUE(data.o.x) AS x, …)` / `ARRAY(SELECT STRUCT(JSON_VALUE(e.x) AS x, …) FROM UNNEST(JSON_QUERY_ARRAY(data.a)) AS e WITH OFFSET i ORDER BY i)` | `FROM_JSON(GET_JSON_OBJECT(data,'$.o'),'<schema>')` |
 | `errors` element | `array(varchar)` JSON strings | array of VARIANT objects | `ARRAY<JSON>` | `ARRAY<STRING>` JSON strings |
 | `source` path | `json_extract_scalar(errors[1],'$.source')` | `errors[0]:source::STRING` | `JSON_VALUE(errors[SAFE_OFFSET(0)].source)` | `GET_JSON_OBJECT(errors[0],'$.source')` |
 | Failure-array expand | `CROSS JOIN UNNEST(...) AS t(f)` | `LATERAL FLATTEN(input => ...) f` | `, UNNEST(...) AS f` | `LATERAL VIEW explode(...) t AS f` |
@@ -76,11 +76,13 @@ expands on the typing rules; the SQL is in `templates/<warehouse>.md`.
 | Recorded schema URI | `failure_ctx.schema` | `f.value:schema::STRING` | `f.schema` | `f.schema` |
 | Grounding source (recovery-column type) | good-table `DESCRIBE` | a **validated good row** (VARIANT, no DDL) | `INFORMATION_SCHEMA` `data_type` | `information_schema` `full_data_type` |
 
-**A nested field is not a scalar.** The scalar extractors return the JSON *substring* for an
-object or array field, not a typed value, so casting that substring straight to the target type is
-wrong. On Databricks it is wrong silently: `CAST(GET_JSON_OBJECT(…) AS ARRAY<STRUCT<…>>)` returns NULL
-rather than erroring, and a nested field rebuilt that way passes the Phase 5 gate as NULL on every row.
-Use the parse-then-cast form in the row above, and profile the field in Phase 3.5 like any other.
+**A nested field is not a scalar.** The scalar extractors don't return a typed value for an object or
+array field: `json_extract_scalar` and `JSON_VALUE` return NULL, and `GET_JSON_OBJECT` returns the JSON
+text as a STRING, which Databricks refuses to `CAST` to an `ARRAY`/`STRUCT`. Use the nested-read form in
+the row above. On Databricks that form can still be wrong silently: `FROM_JSON` returns NULL for a field
+whose name (case-sensitive) or type doesn't match the schema string, so a mismatched nested field comes
+back NULL on every row instead of erroring. Profile the field in Phase 3.5 like any other, and include
+its sub-fields in the Phase 5 null-count check.
 
 Two genuine outliers, not just syntax:
 
