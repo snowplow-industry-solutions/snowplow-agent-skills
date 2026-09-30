@@ -57,11 +57,8 @@ Its `warehouse` key routes the run:
 |---|---|
 | `athena` / `bigquery` / `databricks` / `snowflake` | Load that dialect pack and continue. |
 | `redshift` | Warehouse SQL recovery **isn't supported on Redshift**. Say so and stop — the failed-events table shape, the entity columns and the reconstruction primitives all differ, and there is no tested pack. Don't improvise one from a sibling dialect. |
-| `none-yet` / `unknown` / missing | Offer to run `setup-snowplow-context` once, then ask which warehouse holds their events. |
+| `none-yet` / `unknown` / missing, or no context file | Offer to run `setup-snowplow-context` once (so this and every later skill stops asking), then ask which warehouse holds their events. |
 | anything else | Flag the mismatch and stop rather than guessing a pack. |
-
-If the file is absent, ask the user which warehouse holds their events, and offer once to run
-`setup-snowplow-context` so this and every later skill stops asking.
 
 **Load `reference/<warehouse>.md` now.** Everything below refers to the pack's *token table* for the
 dialect. Rows are referred to **by their exact names** — *Failure-array expand*, *Read a `data`
@@ -182,8 +179,7 @@ column is right *before* any INSERT. If it's wrong, fix the expression and re-ru
 Confirm, on the test SELECT output: the reconstructed column's type/shape matches the target
 field-for-field; the row count equals the failed-event count for this schema + app_id + source; there
 are no unexpected NULLs (the pack flags the warehouse where a NULL is a silent bad-cast, not an error);
-and the
-repaired values are actually corrected. Only pass the gate when all four hold.
+and the repaired values are actually corrected. Only pass the gate when all four hold.
 
 ## Phase 6 — Choose the write path
 
