@@ -11,7 +11,7 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | Table qualifier | `database.table` |
 | Grounding source (recovery-column type) | good-table `DESCRIBE` |
 | Failure-array expand | `CROSS JOIN UNNEST(...) AS t(failure_ctx)` |
-| Read a `data` scalar | `json_extract_scalar(failure_ctx.data, '$.f')` |
+| Read a `data` scalar | `json_extract_scalar(failure_ctx.data, '$.f')` (in a recovery expression: `failure_data`, the `unnested` CTE's alias) |
 | Cast | `CAST(... AS <type>)`; `TRY_CAST` in profiling |
 | contexts reconstruction | `CAST(ARRAY[ROW(...)] AS ARRAY(ROW(...)))`, `_schema_version` first |
 | unstruct reconstruction | `CAST(ROW(...) AS ROW(...))`, no array, usually no `_schema_version` (confirm on a good row) |

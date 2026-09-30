@@ -70,11 +70,16 @@ expands on the typing rules; the SQL is in `templates/<warehouse>.md`.
 | Read a nested `data` object/array | `CAST(json_extract(data,'$.o') AS ROW(…))` / `AS ARRAY(ROW(…))` (`json_extract` already returns JSON — no `json_parse`) | `data:o` (already VARIANT — no extractor) | no JSON→STRUCT cast; rebuild per field: `STRUCT(JSON_VALUE(data.o.x) AS x, …)` / `ARRAY(SELECT STRUCT(JSON_VALUE(e.x) AS x, …) FROM UNNEST(JSON_QUERY_ARRAY(data.a)) AS e WITH OFFSET i ORDER BY i)` | `FROM_JSON(GET_JSON_OBJECT(data,'$.o'),'<schema>')` |
 | `errors` element | `array(varchar)` JSON strings | array of VARIANT objects | `ARRAY<JSON>` | `ARRAY<STRING>` JSON strings |
 | `source` path | `json_extract_scalar(errors[1],'$.source')` | `errors[0]:source::STRING` | `JSON_VALUE(errors[SAFE_OFFSET(0)].source)` | `GET_JSON_OBJECT(errors[0],'$.source')` |
-| Failure-array expand | `CROSS JOIN UNNEST(...) AS t(f)` | `LATERAL FLATTEN(input => ...) f` | `, UNNEST(...) AS f` | `LATERAL VIEW explode(...) t AS f` |
+| Failure-array expand | `CROSS JOIN UNNEST(...) AS t(failure_ctx)` | `LATERAL FLATTEN(input => ...) f` | `, UNNEST(...) AS f` | `LATERAL VIEW explode(...) t AS f` |
 | Good-entity array index | `[1]` (1-based) | `[0]` | `[SAFE_OFFSET(0)]` | `[0]` |
 | Good-entity array size | `cardinality(<col>)` | `ARRAY_SIZE(<col>)` | `ARRAY_LENGTH(<col>)` | `size(<col>)` |
 | Recorded schema URI | `failure_ctx.schema` | `f.value:schema::STRING` | `f.schema` | `f.schema` |
 | Grounding source (recovery-column type) | good-table `DESCRIBE` | a **validated good row** (VARIANT, no DDL) | `INFORMATION_SCHEMA` `data_type` | `information_schema` `full_data_type` |
+
+Bare `data` / `errors` in the cells are fields of the flattened element: qualify them with the expand
+alias, as the schema-URI row does (`failure_ctx.data`, `f.value:data`, `f.data`). The recovery CTEs
+re-alias that element, so inside a recovery expression read `failure_data` (Athena),
+`failure_entry:data` (Snowflake) or `failure_entry.data` (BigQuery); Databricks keeps `f.data`.
 
 **A nested field is not a scalar.** The scalar extractors don't return a typed value for an object or
 array field: `json_extract_scalar` and `JSON_VALUE` return NULL, and `GET_JSON_OBJECT` returns the JSON

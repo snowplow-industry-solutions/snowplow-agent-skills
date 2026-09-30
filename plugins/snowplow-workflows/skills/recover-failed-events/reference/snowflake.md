@@ -11,7 +11,7 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | Table qualifier | `database.schema.table` (three-part) |
 | Grounding source (recovery-column type) | a **validated good row** (VARIANT — no DDL type to read) |
 | Failure-array expand | `LATERAL FLATTEN(input => ...) f` |
-| Read a `data` scalar | `f.value:data:field::TYPE` (the payload is under `data` — `f.value:field` is NULL) |
+| Read a `data` scalar | `f.value:data:field::TYPE` (the payload is under `data` — `f.value:field` is NULL; in a recovery expression: `failure_entry:data:field::TYPE`, the `prep` CTE's alias) |
 | Cast | `::TYPE`; `TRY_CAST` in profiling |
 | contexts reconstruction | `ARRAY_CONSTRUCT(OBJECT_CONSTRUCT(...))`, `_schema_version` first |
 | unstruct reconstruction | `OBJECT_CONSTRUCT(...)`, no array, usually no `_schema_version` (confirm on a good row) |

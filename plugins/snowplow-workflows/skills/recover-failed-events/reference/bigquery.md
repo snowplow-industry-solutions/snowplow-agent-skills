@@ -11,7 +11,7 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | Table qualifier | `project.dataset.table` (backticked) |
 | Grounding source (recovery-column type) | `data_type` (`INFORMATION_SCHEMA.COLUMNS`) |
 | Failure-array expand | `, UNNEST(...) AS f` |
-| Read a `data` scalar | `JSON_VALUE(f.data.field)`; strict `INT64()`/`STRING()`/`FLOAT64()`/`BOOL()` where native |
+| Read a `data` scalar | `JSON_VALUE(f.data.field)`; strict `INT64()`/`STRING()`/`FLOAT64()`/`BOOL()` where native (in a recovery expression: `failure_entry.data.field`, the `prep` CTE's alias) |
 | Cast | strict accessor **or** `CAST(JSON_VALUE(...) AS <T>)`; `SAFE_CAST` in profiling |
 | contexts reconstruction | `[STRUCT(... AS field)]`, `_schema_version` first |
 | unstruct reconstruction | `STRUCT(...)`, no array, usually no `_schema_version` (confirm on a good row) |
@@ -24,7 +24,7 @@ classification, the gates) are in `reference/failure-context.md`; the runnable S
 | Recovery-expr embedding | triple-quoted `'''…'''` (no escaping; survives a wrapped paste) |
 | Good-entity array index | `[SAFE_OFFSET(0)]` |
 | Good-entity array size | `ARRAY_LENGTH(<recovery_column>)` |
-| Recorded schema URI | `f.schema` (the URI **as recorded** — the ResolutionError filter) |
+| Recorded schema URI | `f.schema` (the URI **as recorded** — the ResolutionError filter; `failure_entry.schema` in the `prep` CTE) |
 
 BigQuery is the only warehouse with **strict typed JSON accessors**, so extraction is a per-field
 choice: the strict accessor where the value is already the native JSON type, `CAST(JSON_VALUE(...) AS
