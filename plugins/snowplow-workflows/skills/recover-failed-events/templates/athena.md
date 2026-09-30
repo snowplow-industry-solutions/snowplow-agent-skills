@@ -331,7 +331,7 @@ python3 scripts/generate_insert_athena.py \
 It prints a sanity summary (good/failed column counts, pass-through, nulled) to stderr and writes the
 runnable INSERT to `recovery.sql`; drop `--out` to print it instead. If it warns the recovery column
 wasn't found, `RECOVERY_COLUMN` doesn't match the good table — fix it and re-run. Review `recovery.sql`
-with the user (recovery column carries the expression, failure column nulled, `load_tstamp` refreshed,
+with the user (recovery column carries the expression, failure column excluded, `load_tstamp` refreshed,
 positional order matches the good table), then have them run it.
 
 **In Claude Desktop** the user must enable *Code execution and file creation* (Settings → Capabilities)
