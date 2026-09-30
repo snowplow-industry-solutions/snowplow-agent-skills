@@ -15,10 +15,13 @@ the reconstruction expression, so the failed payload lands unrepaired.
 name (casing, wrong major version, a typo), so the generator's recovery-column branch never matched and
 it fell through to pass-through.
 **Verify:** search the generated INSERT for the recovery column's name. If it appears in the SELECT
-list as a bare name rather than wrapped in the reconstruction, the branch didn't match. The generator's
-stderr sanity summary also names the recovery column it resolved — compare it to the good table's.
+list as a bare name rather than wrapped in the reconstruction, the branch didn't match. On Athena and
+Databricks the local script's stderr summary prints only column counts and the pass-through / nulled
+counts, plus a `WARNING` line when the recovery column isn't among the good table's columns — that
+warning is the tell. BigQuery, Snowflake and the in-warehouse Databricks fallback print no summary, so
+there the INSERT search is the whole check.
 **Fix:** re-run the "finding the recovery column name" query (or the good-table `DESCRIBE` on Athena),
-copy the exact `column_name`, and regenerate. The generator warns when the recovery column wasn't found.
+copy the exact `column_name`, and regenerate.
 
 ### Unexpected NULLs in the reconstructed column
 **Symptom:** recovered rows have NULL where a value was expected.
