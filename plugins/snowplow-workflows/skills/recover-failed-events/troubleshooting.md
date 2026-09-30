@@ -142,8 +142,9 @@ in legacy mode — neither errors. "It ran" is not proof (see `reference/databri
 **Verify:** run the per-field null-count check (`templates/databricks.md`) over the whole recovery
 set and compare each field's null count against its `_absent` count from Phase-3.5 profiling. A null
 count above `_absent` is the silent cast failure — those rows had a value and lost it.
-**Fix:** run the per-field null-count check (`templates/databricks.md`) and eyeball the values; a non-zero
-count on a required field means a wrong path or a bad value. The Phase-3.5 profiling gate pre-empts this.
+**Fix:** for each field over its `_absent` count, correct the JSON path if it's wrong; if the path is
+right, the values don't cast — partition those rows off and recover only the castable population. The
+Phase-3.5 profiling gate pre-empts this.
 
 ### Delta INSERT errors on by-name struct field resolution
 **Symptom:** the positional `INSERT ... SELECT` errors on the reconstructed struct column.
