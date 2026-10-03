@@ -17,7 +17,7 @@ entity (see "One event, several failures" below). Each element is a struct with 
 | `component_name` / `component_version` | Pipeline component that rejected the event |
 | `data` | The original event payload — read scalars out of it per the dialect (see the navigation table) |
 | `errors` | One entry per validation error, carrying `source`, `path`, `keyword`, `message`, … `source` is the key one (below) |
-| `failure_type` | e.g. `SchemaViolation`, `ResolutionError` |
+| `failure_type` | e.g. `ValidationError`, `ResolutionError` |
 | `schema` | Iglu URI of the schema that failed |
 | `timestamp` | When the failure occurred |
 

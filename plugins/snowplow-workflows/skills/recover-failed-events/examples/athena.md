@@ -31,7 +31,7 @@ Summary query returns (abridged):
 
 | failing_schema | app_id | failure_type | source | failed_events | first_seen | last_seen |
 |---|---|---|---|---|---|---|
-| iglu:com.acme/user_entity/jsonschema/1-0-0 | web | SchemaViolation | contexts | 3,418 | 2026-03-02 08:14 | 2026-03-09 23:51 |
+| iglu:com.acme/user_entity/jsonschema/1-0-0 | web | ValidationError | contexts | 3,418 | 2026-03-02 08:14 | 2026-03-09 23:51 |
 
 We pick that schema. The row-level drill-in shows `errors` complaining that `user_id` is a string
 where integer is expected — our hypothesis. Duplicate pre-check returns **0** (never recovered). It's
