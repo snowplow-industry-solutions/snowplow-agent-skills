@@ -8,6 +8,17 @@ several of these failures share a symptom, and the check is what tells them apar
 
 ## Shared (any warehouse)
 
+### The identification query returns no rows
+**Symptom:** the Phase 2 summary comes back empty, so it looks like there is nothing to recover.
+**Cause:** nearly always the lookback window is narrower than the age of the failed events. Less often
+the failed-events table is genuinely empty, or its failure column holds no entries.
+**Verify:** count the whole table without a window — `SELECT COUNT(*), MIN(load_tstamp),
+MAX(load_tstamp) FROM <failed_table>` — and re-run the identification query with the `WHERE` clause
+removed. A `MAX(load_tstamp)` older than the window is the common case; rows present but no
+identification output means the failure column is empty, which is a different problem.
+**Fix:** widen the window to cover `MIN(load_tstamp)`, or drop the predicate and re-run. Only tell the
+user there is nothing to recover once the unwindowed query is also empty.
+
 ### The generated INSERT is missing the recovery expression (recovery column passed through instead)
 **Symptom:** the generated INSERT lists the recovery column as a plain pass-through (its name only), not
 the reconstruction expression, so the failed payload lands unrepaired.

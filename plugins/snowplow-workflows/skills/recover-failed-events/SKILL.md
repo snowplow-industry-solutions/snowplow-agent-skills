@@ -91,6 +91,11 @@ app_id × failure type × source, with volumes. Read off which schemas fail, at 
 `failure_type`, which app_ids, and whether a schema failed as `contexts`, as `unstruct`, or both.
 Have the user pick **one** schema — and if it shows up under both sources, one source too.
 
+**An empty result is not "nothing to recover."** The lookback bounds the scan; it isn't a
+correctness filter. Failed events sit in the table until someone removes them, so the default window
+is easily narrower than the age of the data. Widen it, or drop it, before reporting that there's
+nothing there — see *The identification query returns no rows* in `troubleshooting.md`.
+
 **One event can fail on several entities at once**, so the failure column is an array with one
 element per failed entity. The identification query **flattens** it (the pack's *Failure-array
 expand*) so a schema is surfaced wherever it sits in the array — reading only the first element
