@@ -16,8 +16,10 @@ the failed-events table is genuinely empty, or its failure column holds no entri
 MAX(load_tstamp) FROM <failed_table>` — and re-run the identification query with the `WHERE` clause
 removed. A `MAX(load_tstamp)` older than the window is the common case; rows present but no
 identification output means the failure column is empty, which is a different problem.
-**Fix:** widen the window to cover `MIN(load_tstamp)`, or drop the predicate and re-run. Only tell the
-user there is nothing to recover once the unwindowed query is also empty.
+**Fix:** set a bounded range starting at `MIN(load_tstamp)` (`LOAD_TSTAMP_START` in the generator
+config) and re-run. Don't drop the window outright: every later query and the INSERT must use the same
+window, and the generators require one. Only tell the user there is nothing to recover once the
+unwindowed count is also zero.
 
 ### The generated INSERT is missing the recovery expression (recovery column passed through instead)
 **Symptom:** the generated INSERT lists the recovery column as a plain pass-through (its name only), not
