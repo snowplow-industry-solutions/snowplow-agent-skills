@@ -15,6 +15,7 @@ Source: the field skills map (`docs/snowplow-skills-map.pdf`). Waves are indicat
 | Discover tracking opportunities / product event surfaces | PM/Analyst | planned | discovery step of `implement-custom-events` today; dedicated skill later | 2 |
 | Create tracking plans from uncategorised Data Structures | PM/Analyst | planned | — | 3 |
 | Frontend / Mobile / Tracker init / OOTB | Developer | shipped | `install-snowplow-tracking` | 1 |
+| Ad blocker resilience best practices (first-party collector domain, custom paths, tracker hosting, server-side) | Developer | proposed | module of `install-snowplow-tracking` (preferred) or standalone `adblocker-best-practices`; decide with tracker skill owner | 2 |
 | Backend serverside | Developer | shipped | `install-snowplow-tracking` (server-side branch: Node, Python, Java; docs-fallback for other trackers) | 2 |
 | Plugin-specific instrumentation (media, ecom) | Developer | planned | — | 2 |
 | Anonymous tracking implementation | Developer | planned | shared with governance anonymous-tracking skill | 3 |
@@ -23,10 +24,12 @@ Source: the field skills map (`docs/snowplow-skills-map.pdf`). Waves are indicat
 | Check OOTB events against HTML markup | Developer | planned | — | 3 |
 | Testing locally / Spin up Micro | Developer | shipped | `setup-micro`, `validate-snowplow-implementation` | 1 |
 | Debugging failed events | Developer | shipped | `debug-failed-events` (local-first; production side is *product* `troubleshooting`) | 1 |
+| Snowbridge transformations and filters (built-in vs custom JS, common recipes, local testing) | Developer / Data Eng | proposed | `build-snowbridge-transformations` | 2 |
 | Workflow: auto-implement events + monitor in Micro | Developer | shipped | `implement-custom-events` | 1 |
 | Writing once-off queries | Analyst | shipped | `query-snowplow-data` | 2 |
 | Debugging data quality issues | Analyst | planned | — | 2 |
 | Event recovery (+ keyhole backfills) | Analyst | shipped | `recover-failed-events` (Athena, BigQuery, Databricks, Snowflake); keyhole backfills not yet | 3 |
+| Legacy recovery from the failed-events bucket (replay raw failed events from object storage, no warehouse loader) | Analyst / Support | proposed | extend `recover-failed-events` with a bucket mode (preferred) or standalone `recover-from-bucket`; align with event recovery owner | 2 |
 | New dbt project for Snowplow models | Analytics Eng | planned | — | 2 |
 | Unified model setup | Analytics Eng | planned | — | 2 |
 | Attribution model setup | Analytics Eng | planned | — | 2 |
